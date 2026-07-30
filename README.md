@@ -18,8 +18,6 @@ Blessed のトランシーバー風 TUI で操作する。
 ## Quick Start
 
 ```bash
-npm install -g tomorrow-radio
-
 tomorrow-radio status                    # 認証確認
 tomorrow-radio scan                      # 全126局一覧
 tomorrow-radio                           # TUI 起動

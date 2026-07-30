@@ -16,12 +16,6 @@ sudo apt install ffmpeg
 choco install ffmpeg
 ```
 
-## Install
-
-```bash
-npm install -g tomorrow-radio
-```
-
 Or from source:
 
 ```bash
