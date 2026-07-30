@@ -1,0 +1,21 @@
+node_modules/
+dist/
+*.log
+
+# editor
+.DS_Store
+*.swp
+*.swo
+*~
+
+# env
+.env
+.env.local
+
+# ide
+.idea/
+.vscode/
+*.sublime-*
+
+# os
+Thumbs.db
