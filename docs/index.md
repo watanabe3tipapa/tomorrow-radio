@@ -32,7 +32,7 @@ features:
 import TuiDemo from "./components/TuiDemo.vue"
 </script>
 
-<div style="max-width: 720px; margin: 0 auto">
+<div class="tui-demo-wrapper">
   <TuiDemo />
 </div>
 
@@ -61,10 +61,16 @@ tomorrow-radio podcast download https://feeds.simplecast.com/54nAGcIl 0
 
 ## Why Tomorrow Radio?
 
-| アプローチ | 操作感 | 軽量性 |
-|-----------|--------|--------|
-| rfriends | Web GUI (便利だが重い) | ❌ 要 Web サーバ・samba |
-| radika (Windows) | GUI (Windows 限定) | ❌ Windows 必須 |
-| **Tomorrow Radio** | **TUI トランシーバー風** | **FFmpeg + Node.js のみ** |
+<div class="comparison-table">
+
+| | rfriends | radika (Windows) | **Tomorrow Radio** |
+|---|---|---|---|
+| **操作感** | Web GUI (便利だが重い) | GUI (Windows 限定) | **TUI トランシーバー風** |
+| **軽量性** | ❌ 要 Web サーバ・samba | ❌ Windows 必須 | **FFmpeg + Node.js のみ** |
+| **対応ソース** | radiko | radiko | radiko / らじる★らじる / サイマルラジオ / ポッドキャスト |
+| **予約録音** | Web 操作 | GUI 操作 | cron エクスポート (OS ネイティブ) |
+| **動作環境** | Linux サーバ必須 | Windows 限定 | **macOS / Linux / Windows** (Node.js) |
+
+</div>
 
 ただの録音ツールではなく、「ラジオを受信している」という体験を提供します。
