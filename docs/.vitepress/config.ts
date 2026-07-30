@@ -3,7 +3,7 @@ import { defineConfig } from "vitepress"
 export default defineConfig({
   base: "/tomorrow-radio/",
   title: "Tomorrow Radio",
-  description: "軽量 radiko 録音 CLI ツール",
+  description: "軽量 radiko / らじる★らじる / サイマルラジオ / ポッドキャスト 録音 CLI",
   cleanUrls: true,
   themeConfig: {
     nav: [

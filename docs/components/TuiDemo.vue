@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from "vue"
 
 const signalLevel = ref(0)
 const currentStation = ref("TBS")
+const currentSource = ref("RADIKO")
 const mode = ref("LIVE")
 const outputFormat = ref("m4a")
 const elapsed = ref("--:--:--")
@@ -50,6 +51,9 @@ async function runDemo() {
   signalLevel.value = 0
   elapsed.value = "--:--:--"
   recording.value = false
+  currentStation.value = "TBS"
+  currentSource.value = "RADIKO"
+  mode.value = "LIVE"
 
   // Phase 1: Startup
   addLog("Tomorrow Radio 起動")
@@ -62,70 +66,111 @@ async function runDemo() {
   addLog("認証完了  エリア: JP13")
   signalLevel.value = 100
   pttStatus.value = "[▶ PTT]  Connected  Enter: Record"
-  addChat("[SYS] 選局: TBS", "cyan")
+  addChat("[SYS] 選局: TBS (radiko)", "cyan")
   addChat("[NOW] 伊集院光の週末ラジオ  (13:00〜15:00)", "white")
   await delay(1000)
 
-  // Phase 3: Start recording
+  // Phase 3: Start recording (radiko)
   pttStatus.value = "[▶ RECORDING]  Enter: Stop   s: Station   q: Quit"
   recording.value = true
   await delay(400)
   addChat("[REC] 録音開始 → TBS_20260730_130000.m4a", "red")
   addLog("録音開始: TBS (LIVE) → TBS_20260730_130000.m4a")
 
-  // Phase 4: Progress
-  for (let sec = 5; sec <= 30; sec += 5) {
+  for (let sec = 5; sec <= 15; sec += 5) {
     elapsed.value = `00:${String(sec).padStart(2, "0")}/01:00:00`
     addLog(`録音中... ${elapsed.value}`)
-    await delay(500)
+    await delay(400)
   }
 
-  // Phase 5: Stop recording
-  addChat("[DONE] 録音完了: TBS_20260730_130000.m4a (30秒)", "green")
-  addLog("録音完了: TBS_20260730_130000.m4a (30秒)")
+  addChat("[DONE] 録音完了: TBS_20260730_130000.m4a", "green")
+  addLog("録音完了: TBS_20260730_130000.m4a")
   recording.value = false
-  elapsed.value = "00:30/01:00:00"
+  elapsed.value = "00:15/01:00:00"
   await delay(500)
 
-  // Phase 6: Station switch demo
-  pttStatus.value = "[SYS]  Station: TBS"
-  await delay(800)
-  currentStation.value = "FMT"
+  // Phase 4: Switch to らじる★らじる
+  pttStatus.value = "[SYS]  Switching source..."
+  await delay(600)
+  currentStation.value = "rajiru_r1_tokyo"
+  currentSource.value = "らじる"
   mode.value = "LIVE"
-  addLog("選局: FMT")
-  addChat("選局: FMT", "cyan")
   signalLevel.value = 90
-  await delay(800)
-  addChat("[NOW] 東京 FM 80.0MHz  (13:30〜16:00)", "white")
+  addLog("選局: rajiru_r1_tokyo (らじる★らじる)")
+  addChat("[SYS] 選局: rajiru_r1_tokyo (らじる★らじる)", "cyan")
   await delay(600)
-
-  // Phase 7: Mode switch
-  mode.value = "TIMEFREE"
-  addLog("モード切替: TIMEFREE")
-  addChat("モード切替: TIMEFREE", "magenta")
+  addChat("[NOW] マイあさ！  (05:00〜05:55)", "white")
   await delay(800)
 
-  // Mode switch back
-  mode.value = "LIVE"
-  addLog("モード切替: LIVE")
+  // Phase 5: Record NHK
+  recording.value = true
+  pttStatus.value = "[▶ RECORDING]  NHK R1 東京 録音中..."
+  await delay(400)
+  addChat("[REC] 録音開始 → rajiru_r1_tokyo_20260730_050000.m4a", "red")
+  addLog("録音開始: NHK R1 東京 (LIVE)")
+
+  for (let sec = 5; sec <= 15; sec += 5) {
+    elapsed.value = `00:${String(sec).padStart(2, "0")}/01:00:00`
+    await delay(300)
+  }
+
+  addChat("[DONE] 録音完了: rajiru_r1_tokyo_20260730_050000.m4a", "green")
+  addLog("録音完了: rajiru_r1_tokyo_20260730_050000.m4a")
+  recording.value = false
+  await delay(400)
+
+  // Phase 6: SimulRadio
+  currentStation.value = "simul_FM_WING"
+  currentSource.value = "SIMUL"
+  signalLevel.value = 75
+  addLog("選局: simul_FM_WING (サイマルラジオ)")
+  addChat("[SYS] 選局: simul_FM_WING (北海道)", "cyan")
+  await delay(600)
+  addChat("[NOW] FM WING  (コミュニティFM)", "white")
+  await delay(800)
+
+  recording.value = true
+  pttStatus.value = "[▶ RECORDING]  SimulRadio 録音中..."
+  await delay(300)
+  addChat("[REC] 録音開始 → simul_FM_WING_20260730_060000.m4a", "red")
+
+  for (let sec = 5; sec <= 15; sec += 5) {
+    elapsed.value = `00:${String(sec).padStart(2, "0")}/01:00:00`
+    await delay(300)
+  }
+
+  addChat("[DONE] 録音完了: simul_FM_WING_20260730_060000.m4a", "green")
+  addLog("録音完了: simul_FM_WING_20260730_060000.m4a")
+  recording.value = false
+  await delay(400)
+
+  // Phase 7: Podcast
+  currentStation.value = "podcast"
+  currentSource.value = "RSS"
+  signalLevel.value = 85
+  addLog("ポッドキャストフィード取得: The Daily")
+  addChat("[SYS] ポッドキャスト: The Daily (NYT)", "cyan")
+  await delay(600)
+  addChat("[NOW] Israel, AIPAC, and Difficult Questions for Democrats", "white")
+  await delay(400)
+
+  addLog("エピソード #0 をダウンロード中...")
+  await delay(800)
+  addLog("ダウンロード完了: The_Daily_ep0.mp3")
+  addChat("[DONE] ポッドキャストダウンロード完了", "green")
   await delay(600)
 
-  // Format switch
-  outputFormat.value = "mp3"
-  addLog("出力形式切替: MP3")
-  await delay(600)
-  outputFormat.value = "m4a"
+  // Phase 8: Wrap
+  pttStatus.value = "[▶ PTT]  Enter: Record   Tab: Focus   s: Station   m: Mode   f: Format   q: Quit"
+  addLog("全ソース対応: radiko / らじる★らじる / サイマルラジオ / ポッドキャスト")
+  await delay(2500)
 
-  pttStatus.value = "[▶ PTT]  Enter: Record   Tab: Focus   s: Station   m: Mode   q: Quit"
-  await delay(2000)
-
-  // Loop
   runDemo()
 }
 
 onMounted(() => {
   cursorInterval = setInterval(() => {
-    // no-op, just keep alive
+    // keep Vue alive
   }, 500)
   setTimeout(() => runDemo(), 500)
 })
@@ -160,6 +205,8 @@ onUnmounted(() => {
         </span>
         <span class="separator">&#9474;</span>
         <span class="station-name">{{ currentStation }}</span>
+        <span class="separator">&#9474;</span>
+        <span class="source-tag">{{ currentSource }}</span>
         <span class="separator">&#9474;</span>
         <span class="mode" :class="mode.toLowerCase()">{{ mode }}</span>
         <span class="separator">&#9474;</span>
@@ -297,6 +344,15 @@ onUnmounted(() => {
 .station-name {
   color: #fff;
   font-weight: bold;
+}
+
+.source-tag {
+  color: #0cf;
+  font-weight: bold;
+  font-size: 10px;
+  padding: 1px 4px;
+  border: 1px solid #0cf;
+  border-radius: 3px;
 }
 
 .mode {
