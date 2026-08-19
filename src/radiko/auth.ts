@@ -5,11 +5,17 @@ import type { AuthSession } from "./types.js"
 
 const AUTH_CACHE_PATH = join(homedir(), "tomorrow-radio", "auth.json")
 const CACHE_TTL_MS = 60 * 60 * 1000
+const USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+
+function isValidAreaId(areaId: string): boolean {
+  return /^JP\d{2}$/.test(areaId)
+}
 
 function readCache(): AuthSession | null {
   try {
     const raw = readFileSync(AUTH_CACHE_PATH, "utf-8")
-    return JSON.parse(raw) as AuthSession
+    const session = JSON.parse(raw) as AuthSession
+    return isValidAreaId(session.areaId) ? session : null
   } catch {
     return null
   }
@@ -29,21 +35,11 @@ export async function authenticate(force = false): Promise<AuthSession> {
     }
   }
 
-  const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
-
-  // Step 1: get area
-  const areaRes = await fetch("https://api.radiko.jp/apparea/area", {
-    headers: { "User-Agent": ua },
-  })
-  const areaText = await areaRes.text()
-  const areaMatch = areaText.match(/class="(.+?)"/)
-  const areaId = areaMatch ? areaMatch[1] : "JP13"
-
-  // Step 2: auth1
-  const auth1Res = await fetch("https://radiko.jp/v2/api/auth1", {
+  // Step 1: auth1
+  const auth1Res = await fetch("https://api.radiko.jp/v2/api/auth1", {
     method: "GET",
     headers: {
-      "User-Agent": ua,
+      "User-Agent": USER_AGENT,
       "X-Radiko-App": "pc_html5",
       "X-Radiko-App-Version": "0.0.1",
       "X-Radiko-Device": "pc",
@@ -52,34 +48,47 @@ export async function authenticate(force = false): Promise<AuthSession> {
   })
   const token = auth1Res.headers.get("X-Radiko-AuthToken")
   const keyOffsetStr = auth1Res.headers.get("X-Radiko-KeyOffset")
-  if (!token || !keyOffsetStr) {
-    throw new Error("auth1 failed: missing token or keyoffset")
+  const keyLengthStr = auth1Res.headers.get("X-Radiko-KeyLength")
+  if (!auth1Res.ok || !token || !keyOffsetStr || !keyLengthStr) {
+    throw new Error("auth1 failed: missing authentication headers")
   }
-  const keyOffset = Number.parseInt(keyOffsetStr, 10)
 
-  // Step 3: get auth key from playerCommon.js
+  const keyOffset = Number.parseInt(keyOffsetStr, 10)
+  const keyLength = Number.parseInt(keyLengthStr, 10)
+  if (!Number.isSafeInteger(keyOffset) || !Number.isSafeInteger(keyLength) || keyLength <= 0) {
+    throw new Error("auth1 failed: invalid partial-key parameters")
+  }
+
+  // Step 2: get the current authorization key supplied by Radiko's web player.
   const playerRes = await fetch("https://radiko.jp/apps/js/playerCommon.js", {
-    headers: { "User-Agent": ua },
+    headers: { "User-Agent": USER_AGENT },
   })
   const playerText = await playerRes.text()
   const keyMatch = playerText.match(/'pc_html5',\s*'(.+?)'/)
   if (!keyMatch) {
-    throw new Error("auth1 failed: could not extract auth key")
+    throw new Error("auth1 failed: could not extract authorization key")
   }
   const fullKey = keyMatch[1]
-  const partialKey = btoa(fullKey.slice(keyOffset, keyOffset + 16))
+  const partialKey = btoa(fullKey.slice(keyOffset, keyOffset + keyLength))
 
-  // Step 4: auth2
-  const auth2Res = await fetch("https://radiko.jp/v2/api/auth2", {
+  // Step 3: auth2 returns the listener's actual prefecture area.  The apparea
+  // endpoint may return OUT even when the authentication response is valid,
+  // which produces an unusable HLS request.
+  const auth2Res = await fetch("https://api.radiko.jp/v2/api/auth2", {
     method: "GET",
     headers: {
-      "User-Agent": ua,
+      "User-Agent": USER_AGENT,
+      "X-Radiko-Device": "pc",
+      "X-Radiko-User": "dummy_user",
       "X-Radiko-AuthToken": token,
       "X-Radiko-PartialKey": partialKey,
     },
   })
-  if (!auth2Res.ok) {
-    throw new Error(`auth2 failed: ${auth2Res.status}`)
+  const auth2Text = (await auth2Res.text()).trim()
+  const areaId = auth2Text.split(",")[0]?.trim() ?? ""
+  if (!auth2Res.ok || !isValidAreaId(areaId)) {
+    const reason = areaId === "OUT" ? "Radikoの配信対象地域外です" : `auth2 failed: ${auth2Res.status}`
+    throw new Error(reason)
   }
 
   const session: AuthSession = {

@@ -407,4 +407,118 @@ onUnmounted(() => {
   font-size: 12px;
   font-weight: bold;
 }
+
+/* Refined radio-receiver frame */
+.tui-wrapper {
+  position: relative;
+  padding: 22px;
+  border: 1px solid rgba(72, 224, 244, 0.2);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(0, 196, 218, 0.18), transparent 32%),
+    linear-gradient(145deg, #122631, #071116 70%);
+  box-shadow: 0 24px 56px rgba(5, 22, 29, 0.25);
+}
+
+.tui-wrapper::before {
+  position: absolute;
+  top: 9px;
+  left: 18px;
+  color: rgba(155, 222, 231, 0.52);
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  content: "TOMORROW RADIO / SIGNAL CONSOLE";
+}
+
+.tui {
+  position: relative;
+  margin-top: 10px;
+  border-color: rgba(73, 224, 243, 0.36);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025), 0 14px 30px rgba(0, 0, 0, 0.34);
+}
+
+.header {
+  min-height: 38px;
+  padding: 8px 12px;
+  border-bottom-color: rgba(0, 226, 255, 0.62);
+  background: linear-gradient(90deg, #10222a, #0b1419 70%);
+}
+
+.main {
+  min-height: 132px;
+  padding: 14px 12px;
+  background-color: #091015;
+  background-image: linear-gradient(rgba(86, 213, 228, 0.035) 1px, transparent 1px);
+  background-size: 100% 24px;
+}
+
+.msg {
+  position: relative;
+  padding-left: 10px;
+}
+
+.msg::before {
+  position: absolute;
+  left: 0;
+  color: #367382;
+  content: ">";
+}
+
+.log-pane {
+  padding: 9px 12px;
+  border-bottom-color: rgba(240, 165, 26, 0.45);
+  background: #070c0f;
+}
+
+.log-entry {
+  gap: 18px;
+}
+
+.log-time {
+  flex: 0 0 auto;
+}
+
+.footer {
+  min-height: 30px;
+  padding: 7px 12px;
+  background: linear-gradient(90deg, #063f59, #073148);
+  color: #dffaff;
+}
+
+.source-tag {
+  box-shadow: 0 0 12px rgba(0, 204, 255, 0.25);
+}
+
+@media (max-width: 640px) {
+  .tui-wrapper {
+    padding: 16px 10px 10px;
+    border-radius: 10px;
+  }
+
+  .header {
+    gap: 6px;
+    font-size: 10px;
+    flex-wrap: wrap;
+  }
+
+  .separator {
+    display: none;
+  }
+
+  .station-name {
+    margin-left: auto;
+  }
+
+  .main {
+    min-height: 148px;
+    font-size: 11px;
+  }
+
+  .log-pane,
+  .footer {
+    font-size: 10px;
+  }
+}
 </style>

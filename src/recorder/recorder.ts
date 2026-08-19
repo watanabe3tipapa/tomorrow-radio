@@ -16,6 +16,9 @@ export class Recorder extends EventEmitter {
   private _running = false
   private _startTime = 0
   private _outputPath = ""
+  private stopRequested = false
+  private forceStopTimer: NodeJS.Timeout | null = null
+  private processFinished = false
 
   get running(): boolean {
     return this._running
@@ -23,6 +26,27 @@ export class Recorder extends EventEmitter {
 
   get outputPath(): string {
     return this._outputPath
+  }
+
+  private clearForceStopTimer(): void {
+    if (this.forceStopTimer) {
+      clearTimeout(this.forceStopTimer)
+      this.forceStopTimer = null
+    }
+  }
+
+  private finish(error?: Error): void {
+    if (this.processFinished) return
+    this.processFinished = true
+    this.clearForceStopTimer()
+    this._running = false
+    this.proc = null
+
+    if (error) {
+      this.emit("error", error)
+    } else {
+      this.emit("done", { outputPath: this._outputPath })
+    }
   }
 
   start(options: RecordOptions): void {
@@ -34,17 +58,23 @@ export class Recorder extends EventEmitter {
     this._outputPath = options.outputPath
     this._running = true
     this._startTime = Date.now()
+    this.stopRequested = false
+    this.processFinished = false
     this.emit("start", options.outputPath)
 
-    this.proc = spawn(options.bin, options.args, {
-      stdio: ["ignore", "ignore", "pipe"],
+    const proc = spawn(options.bin, options.args, {
+      // FFmpeg accepts "q" on stdin and then writes the output trailer,
+      // ensuring m4a files remain playable after the user stops recording.
+      stdio: ["pipe", "ignore", "pipe"],
     })
+    this.proc = proc
 
     let stderrBuf = ""
 
-    this.proc.stderr?.on("data", (chunk: Buffer) => {
+    proc.stderr?.on("data", (chunk: Buffer) => {
       stderrBuf += chunk.toString()
-      // Parse FFmpeg time progress from stderr
+      // Keep the buffer bounded while retaining the most recent progress line.
+      if (stderrBuf.length > 8_192) stderrBuf = stderrBuf.slice(-4_096)
       const timeMatch = stderrBuf.match(/time=(\d+):(\d+):(\d+)\.(\d+)/)
       if (timeMatch) {
         const hours = Number.parseInt(timeMatch[1], 10)
@@ -55,30 +85,39 @@ export class Recorder extends EventEmitter {
       }
     })
 
-    this.proc.on("error", (err) => {
-      this._running = false
-      this.emit("error", err)
+    proc.on("error", (err) => {
+      this.finish(err)
     })
 
-    this.proc.on("exit", (code) => {
-      this._running = false
-      if (code === 0) {
-        this.emit("done", { outputPath: options.outputPath })
-      } else {
-        this.emit("error", new Error(`ffmpeg exited with code ${code}`))
+    proc.on("exit", (code, signal) => {
+      if (code === 0 || this.stopRequested) {
+        this.finish()
+        return
       }
+      const detail = signal ? `signal ${signal}` : `code ${code ?? "unknown"}`
+      this.finish(new Error(`ffmpeg exited with ${detail}`))
     })
   }
 
   stop(): void {
-    if (!this._running || !this.proc) return
-    this.proc.kill("SIGTERM")
-    // Give it a moment, then force kill
-    setTimeout(() => {
-      if (this.proc && !this.proc.killed) {
-        this.proc.kill("SIGKILL")
+    const proc = this.proc
+    if (!this._running || !proc || this.stopRequested) return
+
+    this.stopRequested = true
+    // A graceful quit writes container metadata before FFmpeg exits.
+    if (proc.stdin && !proc.stdin.destroyed) {
+      proc.stdin.write("q\n")
+      proc.stdin.end()
+    }
+
+    // Network reads can occasionally keep FFmpeg alive.  Fall back to a
+    // termination signal after a short grace period without losing the normal
+    // graceful-stop path.
+    this.forceStopTimer = setTimeout(() => {
+      if (this.proc === proc && !this.processFinished && proc.exitCode === null) {
+        proc.kill("SIGTERM")
       }
-    }, 3000)
+    }, 5_000)
   }
 
   elapsedSeconds(): number {

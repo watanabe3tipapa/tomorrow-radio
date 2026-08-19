@@ -1,4 +1,4 @@
-import type { StreamInfo, RecordMode } from "./types.js"
+import type { RecordMode } from "./types.js"
 
 function generateLsid(): string {
   return Array.from({ length: 32 }, () =>
@@ -37,23 +37,25 @@ export function buildRecordCommand(
   duration?: number
 ): { bin: string; args: string[] } {
   const bin = "ffmpeg"
-  const headers = [
-    `X-Radiko-AuthToken: ${token}`,
-    `X-Radiko-AreaId: ${areaId}`,
-  ]
+  // FFmpeg accepts custom headers as one CRLF-delimited block.  Passing
+  // multiple -headers flags overwrites the first header on recent FFmpeg
+  // versions, so the authentication token was omitted from HLS requests.
+  const headers = `X-Radiko-AuthToken: ${token}\r\nX-Radiko-AreaId: ${areaId}\r\n`
   const args = [
+    "-nostdin",
     "-http_seekable",
     "0",
     "-seekable",
     "0",
-    ...headers.flatMap((h) => ["-headers", h]),
+    "-headers",
+    headers,
     "-user_agent",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
     "-i",
     streamUrl,
     "-vn",
   ]
-  if (duration) {
+  if (duration && duration > 0) {
     args.push("-t", String(duration))
   }
   if (format === "mp3") {
