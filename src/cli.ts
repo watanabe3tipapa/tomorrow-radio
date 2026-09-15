@@ -35,7 +35,7 @@ export function run(argv: string[]): void {
   program
     .name("tomorrow-radio")
     .description("軽量 radiko / らじる★らじる / サイマルラジオ / ポッドキャスト 録音 CLI")
-    .version("0.1.0")
+    .version("0.2.4")
     .exitOverride()
     .showHelpAfterError(false)
 

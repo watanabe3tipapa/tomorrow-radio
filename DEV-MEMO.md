@@ -242,7 +242,8 @@ rfriends のような常駐サーバは立てない。予約録音は `tomorrow-
 
 ### ストリームURL
 
-- Live: `https://f-radiko.smartstream.ne.jp/{station_id}/_definst_/simul-stream.stream/playlist.m3u8?lsid={lsid}&type=b`
+- Live: `https://alliance-stream-radiko.smartstream.ne.jp/so/playlist.m3u8?station_id={station_id}&l=15&lsid={lsid}&type=b`
+  - 旧形式 `f-radiko.smartstream.ne.jp/{station_id}/_definst_/simul-stream.stream/playlist.m3u8?lsid={lsid}&type=b` は 2026 年現在でも応答するが geo ブロックされやすく、alliance-stream は有効な認証トークン付きであれば国外 IP からでも master を取得できる
 - TimeFree: `https://tf-f-rpaa-radiko.smartstream.ne.jp/tf/playlist.m3u8?station_id={station_id}&start_at={ft}&ft={ft}&end_at={to}&to={to}&l=15&lsid={lsid}&type=b`
 
 ### ffmpeg コマンド
@@ -455,8 +456,8 @@ radiko の認証は **2段階認証** で動作する:
 1. **Auth1**: クライアント情報（端末・アプリバージョン）を送ると、サーバがトークンと鍵オフセットを返す
 2. **Auth2**: トークン + playerCommon.js から計算した部分鍵を送ると、現在のエリアが判定される
 
-エリア判定は **接続元IPアドレスベース**。ストリーミング CDN (`smartstream.ne.jp`) も同じく IP ベースでアクセス制御を行っており、日本国外の IP からは接続できない。
-Auth1/Auth2 サーバは国外からでも比較的寛容だが、ストリーム配信サーバは厳密にブロックする。
+エリア判定は **接続元IPアドレスベース**。旧ストリーミング CDN (`f-radiko.smartstream.ne.jp`) は日本国外の IP からは接続できない。
+Auth1/Auth2 サーバや `alliance-stream.smartstream.ne.jp` は国外からでも比較的寛容で、有効なトークンを X-Radiko-AuthToken ヘッダで渡せば master/medialist/セグメントを取得・再生できる。
 そのため「認証は通るが録音はできない」という状態が発生しうる。
 
 ### XML パースの注意点

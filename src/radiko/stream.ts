@@ -23,8 +23,8 @@ export function resolveStreamUrl(
     )
   }
   return (
-    `https://f-radiko.smartstream.ne.jp/${stationId}/_definst_/simul-stream.stream/playlist.m3u8` +
-    `?lsid=${lsid}&type=b`
+    `https://alliance-stream-radiko.smartstream.ne.jp/so/playlist.m3u8` +
+    `?station_id=${stationId}&l=15&lsid=${lsid}&type=b`
   )
 }
 
