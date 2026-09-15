@@ -771,3 +771,54 @@ ffplay -nodisp -autoexit -loglevel quiet -i {streamUrl}
 - **録音との独立**: Recorder と Player は別インスタンス。同時に動かしても競合しない (FFmpeg と ffplay は別プロセス)。
 - **選局・モード切替で停止**: ヘッダ表示の局・モードと再生内容の乖離を防ぐため、`setStation()` / `setMode()` は再生中なら Player を停止する。
 - **TUI の音源**: ライブ再生は常に `LIVE` ストリーム。タイムフリー中に `p` を押すと自動的に LIVE へ切替えてから再生する。
+
+---
+
+## 特集 — 非国内 IP からの radiko 視聴とストリーム CDN の geo 制御 (2026-09-16)
+
+### 発端
+
+Phase 11 の Live 再生の動作確認中、`f-radiko.smartstream.ne.jp` への接続がタイムアウトして「音が聞こえない」症状が発生。
+調査の結果、radiko のストリーミング CDN は **ホストごと・局ごとに制御ポリシーが異なる** ことが判明した。
+
+### CDN ホスト別の挙動 (非国内 IP から検証)
+
+| ホスト (経路) | 用途 | 非国内 IP からの挙動 |
+|---|---|---|
+| `f-radiko.smartstream.ne.jp/{station}/_definst_/simul-stream.stream/playlist.m3u8` | ライブ master (旧) | **接続不可** — TCP 443 でタイムアウト。Cloudflare プロキシ経由でも 522 |
+| `tf-f-rpaa-radiko.smartstream.ne.jp/tf/playlist.m3u8` | タイムフリー master | 国内向け (非国内ではタイムアウトの可能性) |
+| `alliance-stream-radiko.smartstream.ne.jp/so/playlist.m3u8` | ライブ master (現行) | **認証トークン付きなら大半の局で OK** |
+| `alliance-stream-radiko.smartstream.ne.jp/medialist` | ライブ中継リスト | トークン・Referer 不要で取得可 (master 由来の `session` 付き URL が必要) |
+| `alliance-stream-radiko.smartstream.ne.jp/segments/...` | AAC セグメント | トークン・Referer 不要で取得可 |
+
+- auth1 / auth2 (認証) 自体は非国内 IP からでも通る。areaId も返る。
+- **alliance-stream が現行のライブ CDN**。有効な `X-Radiko-AuthToken` を付ければ非国内 IP からでも master → medialist → セグメントを取得でき、ffplay / ffmpeg で直接再生・録音できる (2026-09 時点)。
+- アプリでは live モードに alliance-stream 形式 (`/so/playlist.m3u8?station_id=..&l=15&lsid=..&type=b`) を使用する。旧 f-radiko 形式は国外からの利用を考えると不適。
+
+### 文化放送 (JOQR) — 局単位の厳格な geo 制御
+
+文化放送 (JOQR) は alliance-stream の master が **HTTP 403 (body: `forbidden`)** を返し、非国内 IP からは再生できない。
+
+| 条件 | 結果 |
+|---|---|
+| Mac (非国内 IP) から直アクセス | 403 |
+| 東京の Cloudflare (proxy `/stream`) 経由 | 403 |
+| `l` / `type` / `value_id` 等のパラメータを変える | 403 |
+| 同一トークンでの TBS / LFR / JORF | **200 OK** で再生可能 |
+
+- JOQR だけが 403 になり、TBS / LFR (ニッポン放送) / JORF (ラジオ日本) が通ることから、**局ごとに CDN 側の geo ポリシーが違う**。
+- 東京のデータセンター IP (Cloudflare) でも弾かれるため、JOQR は「国内」に加えて「住宅用 IP」を要求している可能性が高い。
+- クライアント側の URL / パラメータ変更では回避不能。radiko ダブルプラン (エリアフリー) 等の有料プランか、国内住宅用 IP からの聴取以外の救済手段はない。
+
+### 実装上の教訓
+
+1. **ヘッダの CRLF に注意**: JS / TS 文字列中の `\r\n` は実 CRLF として FFmpeg に渡る。シェルで再現するときは `$'...'` (ANSI-C quoting) を使わないと、リテラルの `\r\n` が渡って 403 の原因になる。
+2. **master / medialist / セグメントで要求が異なる**: master は認証ヘッダ必須だが、medialist 以降はトークン不要。この緩い仕様に依存しすぎた実装はしないこと (仕様変更リスク)。
+3. **検証時のトークン**: デバッグ時に「正しいトークン」と「偽トークン」を混在させると原因切り分けを誤る。まず有効なトークンで要件 (ヘッダ) を固定し、1変数ずつ変える。
+
+### セキュリティ注意 (トークン管理)
+
+- `X-Radiko-AuthToken` などの認証トークンの実値を、この DEV-MEMO / README / コミットログ / テストフィクスチャに残さない。
+- ドキュメント上は常に `{token}` などのプレースホルダで記述する。
+- リポジトリ内に実トークンが存在しないことを、コミット前に `git grep` で確認する。
+- 検証ログや /tmp の作業ファイルに入ったトークンは公開対象として扱わない。
