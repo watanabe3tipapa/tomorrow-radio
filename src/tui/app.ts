@@ -19,6 +19,9 @@ export function startTui(
     onStationChange: handleStationChange,
     onModeChange: handleModeChange,
     onProgress: handleProgress,
+    onPlayStart: handlePlayStart,
+    onPlayDone: handlePlayDone,
+    onPlayError: handlePlayError,
   })
 
   const scheduler = new Scheduler()
@@ -31,6 +34,7 @@ export function startTui(
   let recordingElapsed = 0
   let isConnected = false
   let isRecording = false
+  let isPlaying = false
   let stationList: { id: string; name: string }[] = []
 
   const screen = blessed.screen({
@@ -76,9 +80,10 @@ export function startTui(
     const fmtLabel =
       currentFormat === "mp3" ? "MP3" : "m4a"
     const srcTag = `{cyan-fg}${sourceLabel[src] || src}{/cyan-fg}`
+    const playLabel = isPlaying ? "  │  {yellow-fg}▶ PLAY{/yellow-fg}" : ""
     header.setContent(
       ` ${bar}  ${elapsed}  ${dot}` +
-        `  │  {bold}${currentStation}{/bold}  │  ${srcTag}  │  ${modeLabel}  │  ${fmtLabel}`,
+        `  │  {bold}${currentStation}{/bold}  │  ${srcTag}  │  ${modeLabel}  │  ${fmtLabel}${playLabel}`,
     )
     screen.render()
   }
@@ -167,6 +172,19 @@ export function startTui(
     screen.render()
   }
 
+  function syncFooter(): void {
+    if (isRecording) {
+      renderFooter("[ RECORDING ]  Enter:停止  p:再生  s:選局  q:終了", "red")
+    } else if (isPlaying) {
+      renderFooter("[ ▶ PLAYING ]  p:停止  Enter:録音  s:選局  q:終了", "green")
+    } else {
+      renderFooter(
+        "[▶ PTT]  Enter:録音  Tab:切替  s:選局  m:モード  f:形式  l:予約  p:再生  q:終了",
+        "blue",
+      )
+    }
+  }
+
   // ── Event handlers ──
   function handleLog(entry: LogEntry): void {
     appendLog(entry)
@@ -176,17 +194,14 @@ export function startTui(
     isRecording = true
     recordingElapsed = 0
     appendChat(`[REC] 録音開始 → ${path}`, "red")
-    renderFooter("[ RECORDING ]  Enter:停止  s:選局  q:終了", "red")
+    syncFooter()
     renderHeader()
   }
 
   function handleRecordDone(path: string): void {
     isRecording = false
     appendChat(`[DONE] 録音完了: ${path}`, "green")
-    renderFooter(
-      "[▶ PTT]  Enter:録音  Tab:切替  s:選局  m:モード  f:形式  l:予約  q:終了",
-      "blue",
-    )
+    syncFooter()
     renderHeader()
   }
 
@@ -214,6 +229,30 @@ export function startTui(
 
   function handleProgress(elapsed: number): void {
     recordingElapsed = elapsed
+    renderHeader()
+  }
+
+  function handlePlayStart(): void {
+    isPlaying = true
+    appendChat("[PLAY] ライブ再生開始", "yellow")
+    syncFooter()
+    renderHeader()
+  }
+
+  function handlePlayDone(): void {
+    isPlaying = false
+    syncFooter()
+    renderHeader()
+  }
+
+  function handlePlayError(err: Error): void {
+    isPlaying = false
+    appendLog({
+      level: "err",
+      message: `再生エラー: ${err.message}`,
+      timestamp: new Date(),
+    })
+    syncFooter()
     renderHeader()
   }
 
@@ -299,12 +338,14 @@ export function startTui(
     }
   })
 
+  screen.key(["p"], () => {
+    if (currentMode !== "live") transceiver.setMode("live")
+    transceiver.togglePlayback()
+  })
+
   // ── Init ──
   renderHeader()
-  renderFooter(
-    "[▶ PTT]  Enter:録音  Tab:切替  s:選局  m:モード  f:形式  l:予約  q:終了",
-    "blue",
-  )
+  syncFooter()
   appendLog({
     level: "sys",
     message: "Tomorrow Radio 起動",

@@ -28,5 +28,6 @@ export interface SourceClient {
   getPrograms(stationId: string): Promise<Program[]>
   getStreamUrl(stationId: string, mode?: string, ft?: string, to?: string): Promise<string>
   buildRecordCommand(streamUrl: string, outputPath: string, format: string, duration?: number): RecordCommand
+  buildPlayCommand(streamUrl: string, volume?: number): RecordCommand
   ensureAuth(): Promise<void>
 }

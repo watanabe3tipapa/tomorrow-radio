@@ -50,12 +50,23 @@ export class RadikoSource implements SourceClient {
       duration,
     )
   }
+
+  buildPlayCommand(streamUrl: string, volume = 100) {
+    return this.client.buildPlayCommand(streamUrl, volume)
+  }
 }
 
 const SERVICE_LABEL: Record<string, string> = {
   r1: "NHK R1",
   r2: "NHK R2",
   fm: "NHK FM",
+}
+
+function playArgs(streamUrl: string, volume = 100): string[] {
+  const args = ["-nodisp", "-autoexit", "-loglevel", "quiet"]
+  if (volume !== 100) args.push("-volume", String(Math.max(0, Math.min(100, volume))))
+  args.push("-i", streamUrl)
+  return args
 }
 
 export class RajiruSource implements SourceClient {
@@ -108,6 +119,10 @@ export class RajiruSource implements SourceClient {
     args.push(outputPath)
     return { bin: "ffmpeg", args }
   }
+
+  buildPlayCommand(streamUrl: string, volume?: number) {
+    return { bin: "ffplay", args: playArgs(streamUrl, volume) }
+  }
 }
 
 export class SimulradioSource implements SourceClient {
@@ -146,5 +161,9 @@ export class SimulradioSource implements SourceClient {
     args.push("-c", "copy")
     args.push(outputPath)
     return { bin: "ffmpeg", args }
+  }
+
+  buildPlayCommand(streamUrl: string, volume?: number) {
+    return { bin: "ffplay", args: playArgs(streamUrl, volume) }
   }
 }

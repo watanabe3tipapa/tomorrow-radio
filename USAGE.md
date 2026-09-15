@@ -43,6 +43,7 @@ tomorrow-radio epg rajiru_r1_tokyo                # らじる★らじる番組�
 tomorrow-radio live TBS                           # radiko ライブ録音
 tomorrow-radio live rajiru_r1_tokyo               # らじる★らじる録音
 tomorrow-radio live simul_FM_WING                 # サイマルラジオ録音
+tomorrow-radio play TBS                           # ライブ再生 (ffplay。q で終了)
 tomorrow-radio tf TBS 20260730130000 20260730140000  # タイムフリー (radiko のみ)
 tomorrow-radio schedule                           # 予約一覧
 tomorrow-radio schedule add TBS 20260730 1300 3600 m4a  # 予約追加
@@ -61,6 +62,7 @@ tomorrow-radio rajiru live <id> [duration]        # らじる★らじる録音
 
 ```
 tomorrow-radio live TBS --duration 1800 --format mp3
+tomorrow-radio play TBS --volume 80
 tomorrow-radio tui --station FMT --format m4a
 tomorrow-radio simulradio live simul_FM_WING 1800
 ```
@@ -70,6 +72,22 @@ tomorrow-radio simulradio live simul_FM_WING 1800
 | `--duration, -d` | live, simulradio live | 録音時間(秒) | 3600 |
 | `--format, -f` | live, tf, tui | 出力形式 | m4a |
 | `--station, -s` | tui | 初期選局 | TBS |
+| `--volume, -v` | play | 再生音量 (0-100) | 100 |
+
+### ライブ再生 (play)
+
+`play` は **ffplay**（FFmpeg 同梱）を子プロセスとして起動し、選局した局を聴くモードです。録音ファイルは生成しません。
+
+```bash
+tomorrow-radio play TBS                    # radiko
+tomorrow-radio play rajiru_r1_tokyo        # らじる★らじる
+tomorrow-radio play simul_FM_WING          # サイマルラジオ
+tomorrow-radio play TBS --volume 70        # 音量を 70% で開始
+```
+
+- 再生中の操作（ffplay 標準）: `q` 終了、`9`/`0` 音量、`m` ミュート、`space` 一時停止
+- radiko は認証ヘッダを自動付与（録音と同じ認証セッションを使用）
+- TUI では `p` キーで現在の局のライブ再生をトグル
 
 ---
 
@@ -97,7 +115,10 @@ tomorrow-radio simulradio live simul_FM_WING 1800
 | **m** | モード切替 (Live / TimeFree) |
 | **f** | 形式切替 (MP3 / m4a) |
 | **l** | 予約一覧表示 |
+| **p** | ライブ再生開始 / 停止 |
 | **q** / **Ctrl+C** | 終了 |
+
+> 録音 (Enter) と再生 (p) は独立して操作できます。再生中に選局 (s) やモード切替 (m) を行うと再生は停止します。
 
 ### ステータス表示
 
@@ -109,6 +130,7 @@ tomorrow-radio simulradio live simul_FM_WING 1800
 | TBS | 現在の放送局 |
 | LIVE / TIMEFREE | 動作モード |
 | m4a / mp3 | 出力形式 |
+| ▶ PLAY | ライブ再生中 (黄) |
 
 ---
 
@@ -214,7 +236,9 @@ src/
 │   ├── types.ts          # 型定義 (SimulStation)
 │   └── client.ts         # サイマルラジオ局一覧取得 + ASX ストリーム解決
 ├── recorder/
-│   └── recorder.ts       # FFmpeg 子プロセス管理
+│   └── recorder.ts       # FFmpeg 子プロセス管理 (録音)
+├── player/
+│   └── player.ts         # ffplay 子プロセス管理 (ライブ再生)
 ├── scheduler/
 │   ├── store.ts          # 予約 JSON 永続化
 │   └── scheduler.ts      # 予約管理

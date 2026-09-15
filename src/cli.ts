@@ -6,6 +6,7 @@ import { loadConfig } from "./utils/config.js"
 import { startTui } from "./tui/app.js"
 import { getSource, detectSource } from "./sources/registry.js"
 import type { SourceType, SourceClient } from "./sources/types.js"
+import { Player } from "./player/player.js"
 import { fetchStationList as fetchSimulStations, resolveStreamUrl } from "./simulradio/client.js"
 import { getStations as getRajiruStations } from "./rajiru/client.js"
 function sourceFor(stationId: string): SourceClient {
@@ -160,6 +161,37 @@ export function run(argv: string[]): void {
         })
       } catch (e) {
         console.error("録音エラー:", e instanceof Error ? e.message : e)
+        process.exit(1)
+      }
+    })
+
+  program
+    .command("play")
+    .description("ライブ再生 (ffplay)")
+    .argument("<station>", "放送局ID")
+    .option("-v, --volume <0-100>", "再生音量", "100")
+    .action(async (station, options) => {
+      handled = true
+      const volume = Number.parseInt(options.volume, 10)
+      try {
+        const src = sourceFor(station)
+        await ensureSourceAuth(station)
+        const streamUrl = await src.getStreamUrl(station, "live")
+        const cmd = src.buildPlayCommand(streamUrl, Number.isNaN(volume) ? 100 : volume)
+        const player = new Player()
+        player.on("start", () => {
+          console.log(`再生中: ${station} (q で終了、9/0 で音量、m でミュート)`)
+        })
+        player.on("done", () => {
+          console.log("再生終了")
+        })
+        player.on("error", (e) => {
+          console.error("再生エラー:", e instanceof Error ? e.message : e)
+          process.exit(1)
+        })
+        player.start(cmd)
+      } catch (e) {
+        console.error("再生エラー:", e instanceof Error ? e.message : e)
         process.exit(1)
       }
     })
@@ -522,6 +554,7 @@ export function run(argv: string[]): void {
     "scan",
     "epg",
     "live",
+    "play",
     "tf",
     "schedule",
     "podcast",

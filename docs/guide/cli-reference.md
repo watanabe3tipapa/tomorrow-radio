@@ -15,6 +15,7 @@ tomorrow-radio <command> [options] [arguments]
 | `scan` | List all available stations |
 | `epg <station>` | Show program guide |
 | `live <station>` | Live recording |
+| `play <station>` | Live playback (ffplay) |
 | `tf <station> <ft> <to>` | TimeFree recording <Badge type="warning" text="radiko only" /> |
 | `schedule [sub]` | Schedule management |
 | `podcast <sub>` | Podcast operations |
@@ -89,6 +90,27 @@ tomorrow-radio live simul_FM_WING 7200
 |--------|---------|-------------|
 | `--duration, -d` | `3600` | Recording duration in seconds |
 | `--format, -f` | `m4a` | Output format (`mp3` / `m4a`) |
+
+---
+
+## `play <station>`
+
+Live playback via **ffplay** (bundled with FFmpeg). No file is created. Station ID is auto-detected by prefix.
+
+```bash
+tomorrow-radio play TBS                  # radiko
+tomorrow-radio play rajiru_r1_tokyo      # らじる★らじる
+tomorrow-radio play simul_FM_WING        # サイマルラジオ
+tomorrow-radio play TBS --volume 70
+```
+
+During playback (ffplay standard keys): `q` quit, `9`/`0` volume, `m` mute, `space` pause.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--volume, -v` | `100` | Startup volume (0-100) |
+
+In the TUI, press `p` to toggle live playback of the current station.
 
 ---
 

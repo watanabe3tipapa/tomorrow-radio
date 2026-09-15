@@ -65,3 +65,31 @@ export function buildRecordCommand(
   }
   return { bin, args }
 }
+
+export function buildPlayCommand(
+  streamUrl: string,
+  token: string,
+  areaId: string,
+  volume = 100,
+): { bin: string; args: string[] } {
+  const bin = "ffplay"
+  const headers = `X-Radiko-AuthToken: ${token}\r\nX-Radiko-AreaId: ${areaId}\r\n`
+  const args = [
+    "-nodisp",
+    "-autoexit",
+    "-loglevel",
+    "quiet",
+  ]
+  if (volume !== 100) {
+    args.push("-volume", String(Math.max(0, Math.min(100, volume))))
+  }
+  args.push(
+    "-headers",
+    headers,
+    "-user_agent",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+    "-i",
+    streamUrl,
+  )
+  return { bin, args }
+}

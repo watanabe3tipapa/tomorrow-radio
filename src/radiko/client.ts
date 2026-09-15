@@ -1,6 +1,6 @@
 import { authenticate } from "./auth.js"
 import { fetchStations, fetchPrograms } from "./epg.js"
-import { resolveStreamUrl, buildRecordCommand } from "./stream.js"
+import { resolveStreamUrl, buildRecordCommand, buildPlayCommand } from "./stream.js"
 import type { AuthSession, Station, Program, RecordMode, OutputFormat } from "./types.js"
 
 export class RadikoClient {
@@ -35,6 +35,11 @@ export class RadikoClient {
   ): { bin: string; args: string[] } {
     const session = this.session!
     return buildRecordCommand(streamUrl, session.token, session.areaId, outputPath, format, duration)
+  }
+
+  buildPlayCommand(streamUrl: string, volume = 100): { bin: string; args: string[] } {
+    const session = this.session!
+    return buildPlayCommand(streamUrl, session.token, session.areaId, volume)
   }
 
   async getCurrentProgram(stationId: string): Promise<Program | null> {

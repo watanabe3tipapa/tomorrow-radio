@@ -718,3 +718,55 @@ tomorrow-radio scan --source rajiru      → rajiru のみ
 - ポッドキャストの SourceClient 統合 (RSS はストリーミングと性質が異なるため要検討。ダウンロード完了の検知・進捗表示を TUI で行えると理想的)
 - TUI での EPG 表示精査 (現在は現在放送中のみ。全日番組表のスクロール表示があれば便利)
 - スケジューラの podcast 対応 (cron export の範囲外。podcast は定期チェック + 新着ダウンロードという別の仕組みが必要)
+
+---
+
+## Phase 11 — ライブ再生機能 (2026-09-16)
+
+### 概要
+
+録音だけでなく **今聴いている放送を再生して聴く** 機能 (Live再生) を追加。
+追加依存なしで実現するため、FFmpeg バンドルの **ffplay** を子プロセスとして利用する (ffplay は `-headers` / `-user_agent` に対応しているため radiko の認証ヘッダもそのまま渡せる)。
+
+### 実装ファイル
+
+| ファイル | 責務 |
+|---|---|
+| `src/player/player.ts` | Player クラス (EventEmitter)。ffplay の spawn 管理。停止は stdin に `q` を送る (Recorder と同パターン、3秒後に SIGTERM フォールバック) |
+| `src/radiko/stream.ts` | `buildPlayCommand(streamUrl, token, areaId, volume?)` 追加 (radiko 認証ヘッダ付き ffplay コマンド生成) |
+| `src/radiko/client.ts` | `buildPlayCommand(streamUrl, volume?)` 窓口追加 |
+| `src/sources/types.ts` | `SourceClient` に `buildPlayCommand(streamUrl, volume?)` を追加 |
+| `src/sources/adapters.ts` | Radiko / Rajiru / Simulradio 各アダプタに実装 (rajiru/simul はヘッダ不要の共通 `playArgs()` を使用) |
+| `src/transceiver.ts` | `startPlayback()` / `stopPlayback()` / `togglePlayback()` + イベント (`onPlayStart/onPlayDone/onPlayError`)。選局・モード切替時は再生停止 |
+| `src/tui/app.ts` | `p` キーで再生トグル。ヘッダに `▶ PLAY` 表示、フッターは状態連動 (`syncFooter()`) |
+| `src/cli.ts` | `play <station>` サブコマンド追加 (`--volume, -v`) |
+
+### ffplay のコマンド
+
+```
+# radiko (認証ヘッダ付与)
+ffplay -nodisp -autoexit -loglevel quiet \
+  -headers "X-Radiko-AuthToken: {token}\r\nX-Radiko-AreaId: {area}\r\n" \
+  -user_agent "Mozilla/5.0 ..." \
+  -i {streamUrl}
+
+# らじる★らじる / サイマルラジオ (ヘッダ不要)
+ffplay -nodisp -autoexit -loglevel quiet -i {streamUrl}
+```
+
+- `-nodisp`: 映像なし (音声のみ)
+- `-loglevel quiet`: 進捗表示を抑制して TUI / ターミナルを汚さない
+- `-volume <0-100>`: 起動時音量 (100 以外のみ付与)
+
+### 操作
+
+| 場所 | 操作 |
+|---|---|
+| CLI | `tomorrow-radio play TBS` — ffplay 標準キー: `q` 終了 / `9`,`0` 音量 / `m` ミュート / `space` 一時停止 |
+| TUI | `p` キーでトグル (録音 Enter とは独立。聞きながら録音も可)。ヘッダに `▶ PLAY` |
+
+### 設計メモ
+
+- **録音との独立**: Recorder と Player は別インスタンス。同時に動かしても競合しない (FFmpeg と ffplay は別プロセス)。
+- **選局・モード切替で停止**: ヘッダ表示の局・モードと再生内容の乖離を防ぐため、`setStation()` / `setMode()` は再生中なら Player を停止する。
+- **TUI の音源**: ライブ再生は常に `LIVE` ストリーム。タイムフリー中に `p` を押すと自動的に LIVE へ切替えてから再生する。

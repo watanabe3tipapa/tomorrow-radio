@@ -1,6 +1,7 @@
 import { getSource, detectSource } from "./sources/registry.js"
 import type { SourceClient } from "./sources/types.js"
 import { Recorder } from "./recorder/recorder.js"
+import { Player } from "./player/player.js"
 import type { OutputFormat } from "./radiko/types.js"
 
 export type LogLevel = "sys" | "rec" | "done" | "err"
@@ -19,6 +20,9 @@ export interface TransceiverEvents {
   onStationChange: (station: string) => void
   onModeChange: (mode: string) => void
   onProgress: (elapsed: number) => void
+  onPlayStart: () => void
+  onPlayDone: () => void
+  onPlayError: (error: Error) => void
 }
 
 export interface StationItem {
@@ -28,6 +32,7 @@ export interface StationItem {
 
 export class Transceiver {
   recorder: Recorder
+  player = new Player()
   private events: TransceiverEvents
   private _station: string
   private _mode: string
@@ -59,6 +64,16 @@ export class Transceiver {
     this.recorder.on("progress", (p: { elapsedSeconds: number }) => {
       this.events.onProgress(p.elapsedSeconds)
     })
+
+    this.player.on("start", () => {
+      this.events.onPlayStart()
+    })
+    this.player.on("done", () => {
+      this.events.onPlayDone()
+    })
+    this.player.on("error", (err: Error) => {
+      this.events.onPlayError(err)
+    })
   }
 
   get station(): string {
@@ -77,6 +92,10 @@ export class Transceiver {
     return this._source.type
   }
 
+  get isPlaying(): boolean {
+    return this.player.playing
+  }
+
   private updateSource(): void {
     this._source = getSource(detectSource(this._station))
   }
@@ -84,12 +103,14 @@ export class Transceiver {
   setStation(id: string): void {
     this._station = id
     this.updateSource()
+    if (this.player.playing) this.player.stop()
     this.events.onStationChange(id)
     this.log("sys", `選局: ${id} (${this._source.type})`)
   }
 
   setMode(mode: string): void {
     this._mode = mode
+    if (this.player.playing) this.player.stop()
     this.events.onModeChange(mode)
     this.log("sys", `モード切替: ${mode === "live" ? "LIVE" : "タイムフリー"}`)
   }
@@ -167,6 +188,32 @@ export class Transceiver {
   stopRecording(): void {
     this.recorder.stop()
     this.log("sys", "録音停止")
+  }
+
+  async startPlayback(volume = 100): Promise<void> {
+    this.log("rec", `再生開始: ${this._station} (LIVE)`)
+    try {
+      await this._source.ensureAuth()
+      const streamUrl = await this._source.getStreamUrl(this._station, "live")
+      const cmd = this._source.buildPlayCommand(streamUrl, volume)
+      this.player.start(cmd)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      this.log("err", `再生開始エラー: ${msg}`)
+    }
+  }
+
+  stopPlayback(): void {
+    this.player.stop()
+    this.log("sys", "再生停止")
+  }
+
+  togglePlayback(volume = 100): Promise<void> {
+    if (this.player.playing) {
+      this.stopPlayback()
+      return Promise.resolve()
+    }
+    return this.startPlayback(volume)
   }
 
   async scanStations(): Promise<StationItem[]> {
