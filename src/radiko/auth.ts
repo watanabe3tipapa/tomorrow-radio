@@ -8,7 +8,9 @@ const CACHE_TTL_MS = 60 * 60 * 1000
 const USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
 
 function isValidAreaId(areaId: string): boolean {
-  return /^JP\d{2}$/.test(areaId)
+  // radiko のエリアIDは JP1〜JP47。1桁エリア (JP1〜JP9) も有効なので
+  // \d{2} ではなく \d{1,2} で受ける。JP0 は実在しないが厳密に弾かない。
+  return /^JP\d{1,2}$/.test(areaId)
 }
 
 function readCache(): AuthSession | null {
