@@ -602,6 +602,19 @@ tomorrow-radio simulradio live <id> [sec]   # 局 ID 指定で録音
   - 一部の局は ListenRadio (HLS, MP3) にも対応しているが、本実装では ASX のみサポート
   - コミュニティ FM のため配信品質は安定しない場合がある
 
+### ⚠️ FFmpeg 8 では実質非対応 (2026-09 検証)
+
+サイマルラジオの実体ストリームはほぼ全て **Windows Media (WMSP over HTTP / mms://)** であり、FFmpeg 8.x は **MMS プロトコルをサポートしていない**ため、再生・録音ができない。
+
+| 局の形式 | 検証結果 |
+|---|---|
+| `mms://hdv*.nkansai.tv/...` | FFmpeg「Protocol not found」(MMS 廃止) |
+| `http://hdv*.nkansai.tv/...` (WMSP over HTTP) | ASX 応答を LRC/テキスト誤検出 → 失敗。ASF 強制も Invalid data |
+| ごく一部の MP3 直リンク (例: `www.830.fm/announce.mp3`) | FFmpeg は読めるが、当該ホストの DNS が不在 (2026-09 時点) |
+
+- ASX の `<Ref href>` 解決 (`src/simulradio/client.ts`) と局一覧取得は正常に動作する
+- CLI の `simulradio live` は `mms://` および `nkansai.tv` の URL を検出した場合に警告を出す (FFmpeg やプロトコル自体をどうにかできないため、対応には MMS 対応プレイヤー別途導入が必要)
+
 ---
 
 ## Phase 9 — らじる★らじる対応 (2026-07-30)

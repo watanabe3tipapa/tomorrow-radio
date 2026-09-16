@@ -425,6 +425,11 @@ export function run(argv: string[]): void {
             console.error("ストリームURLを解決できませんでした")
             return
           }
+          if (/^mms:\/\//.test(streamUrl) || /nkansai\.tv/.test(streamUrl)) {
+            console.warn(
+              "注意: この局は Windows Media 形式 (mms/WMSP) のため、FFmpeg 8 では再生・録音できません (非対応プロトコル)",
+            )
+          }
           console.log(`録音開始: ${station.name} (${duration}秒)`)
           console.log(`ストリーム: ${streamUrl}`)
           const op = outputPath(id, "m4a")
