@@ -33,7 +33,26 @@
 - Node.js: 22 以上（CLI およびドキュメントのビルド/実行に使用）
 - FFmpeg: ライブ配信、タイムフリー、ポッドキャストの録音・保存に必要
 
-## クイックスタート（README に記載の例）
+## インストール
+
+```bash
+git clone https://github.com/watanabe3tipapa/tomorrow-radio.git
+cd tomorrow-radio
+npm install
+npm run build
+npm link
+```
+
+### `npm link`（グローバルインストール）とは
+
+`npm link` は、npm のグローバル bin ディレクトリ（macOS では `~/.npm-global/bin` など）に `tomorrow-radio` という実行ファイルを登録し、**どのディレクトリからでも** `tomorrow-radio` コマンドを実行できるようにする操作です。npm レジストリへ publish するのではなく、**このリポジトリのビルド成果物 `dist/index.js` を直接参照**します。
+
+- ソースを変更したら `npm run build` で再ビルド → 変更が即反映（publish 不要）
+- リポジトリを更新後は `git pull && npm run build`
+- 複数クローンがある場合、リンクは**最後に `npm link` を実行したディレクトリ**を指します。古い clone にリンクされたまま古いコードが実行されることがあるため、`readlink $(which tomorrow-radio)` でリンク先を確認してください（過去に旧 clone の配布で `auth2 failed: 200` が発生した実例あり）
+- 解除は `npm unlink -g tomorrow-radio`
+
+## クイックスタート
 
 インストール後、以下のコマンド例で認証確認、局の検索、ライブ再生、TUI 起動、個別配信元の録音が行えます。
 

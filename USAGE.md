@@ -26,8 +26,17 @@ git clone https://github.com/watanabe3tipapa/tomorrow-radio.git
 cd tomorrow-radio
 npm install
 npm run build
-npm link    # グローバルインストール
+npm link    # グローバルインストール (下記参照)
 ```
+
+#### `npm link`（グローバルインストール）とは
+
+`npm link` は、npm のグローバル bin ディレクトリ（macOS では `~/.npm-global/bin` など）に `tomorrow-radio` という実行ファイルを登録し、**どのディレクトリからでも** `tomorrow-radio` コマンドを実行できるようにする操作です。npm レジストリへ publish するのではなく、**このリポジトリのビルド成果物 `dist/index.js` を直接参照**します。
+
+- ソースを変更したら `npm run build` で再ビルド → 変更が即反映（publish 不要）
+- リポジトリを更新したら `git pull && npm run build`
+- 複数クローンがある場合、リンクは**最後に `npm link` を実行したディレクトリ**を指します。古い clone にリンクされたまま古いコードが実行されることがあります。`readlink $(which tomorrow-radio)` でリンク先を確認してください
+- 解除は `npm unlink -g tomorrow-radio`
 
 ---
 
