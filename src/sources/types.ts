@@ -22,6 +22,11 @@ export interface RecordCommand {
   args: string[]
 }
 
+export interface ProbeResult {
+  ok: boolean
+  reason?: string
+}
+
 export interface SourceClient {
   readonly type: SourceType
   getStations(): Promise<Station[]>
@@ -30,4 +35,6 @@ export interface SourceClient {
   buildRecordCommand(streamUrl: string, outputPath: string, format: string, duration?: number): RecordCommand
   buildPlayCommand(streamUrl: string, volume?: number): RecordCommand
   ensureAuth(): Promise<void>
+  getAreaId?(): Promise<string>
+  probePlayable(stationId: string): Promise<ProbeResult>
 }

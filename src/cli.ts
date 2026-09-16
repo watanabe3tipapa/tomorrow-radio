@@ -5,6 +5,7 @@ import { Scheduler } from "./scheduler/scheduler.js"
 import { loadConfig } from "./utils/config.js"
 import { startTui } from "./tui/app.js"
 import { getSource, detectSource } from "./sources/registry.js"
+import { probeAll, areaName, mergeStations, MAJOR_STATIONS } from "./sources/playable.js"
 import type { SourceType, SourceClient } from "./sources/types.js"
 import { Player } from "./player/player.js"
 import { fetchStationList as fetchSimulStations, resolveStreamUrl } from "./simulradio/client.js"
@@ -192,6 +193,48 @@ export function run(argv: string[]): void {
         player.start(cmd)
       } catch (e) {
         console.error("再生エラー:", e instanceof Error ? e.message : e)
+        process.exit(1)
+      }
+    })
+
+  program
+    .command("playable")
+    .description("Live再生可能な局を一覧表示 (エリア判定も確認)")
+    .option("-s, --source <type>", "ソース種別 (radiko/rajiru/simulradio)", "radiko")
+    .action(async (options) => {
+      handled = true
+      const type: SourceType =
+        options.source === "rajiru" || options.source === "simulradio"
+          ? options.source
+          : "radiko"
+      try {
+        const src = getSource(type)
+        if (type === "radiko" && src.getAreaId) {
+          const areaId = await src.getAreaId()
+          console.log(`現エリア: ${areaId} (${areaName(areaId)})\n`)
+        }
+        const areaStations = await src.getStations()
+        const stations =
+          type === "radiko"
+            ? mergeStations(areaStations, MAJOR_STATIONS)
+            : areaStations
+        const results = await probeAll(stations, (s) => src.probePlayable(s.id))
+
+        console.log(`-- ${type.toUpperCase()} --`)
+        for (const s of stations) {
+          const r = results.get(s.id)
+          if (r?.ok) {
+            console.log(`  LIVE可   ${s.id.padEnd(12)} ${s.name}`)
+          } else {
+            console.log(`  不可     ${s.id.padEnd(12)} ${s.name}  (${r?.reason ?? "不明"})`)
+          }
+        }
+        const playable = stations.filter((s) => results.get(s.id)?.ok).length
+        console.log(
+          `\n${stations.length} 局中 ${playable} 局が Live 再生可能`
+        )
+      } catch (e) {
+        console.error("エラー:", e instanceof Error ? e.message : e)
         process.exit(1)
       }
     })
@@ -560,6 +603,7 @@ export function run(argv: string[]): void {
     "epg",
     "live",
     "play",
+    "playable",
     "tf",
     "schedule",
     "podcast",

@@ -27,6 +27,33 @@ export class RadikoClient {
     return resolveStreamUrl(stationId, mode, ft, to)
   }
 
+  async getAreaId(): Promise<string> {
+    const session = await this.ensureAuth()
+    return session.areaId
+  }
+
+  async probePlayable(stationId: string): Promise<{ ok: boolean; reason?: string }> {
+    const session = await this.ensureAuth()
+    const url = resolveStreamUrl(stationId, "live")
+    try {
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+          "X-Radiko-AuthToken": session.token,
+          "X-Radiko-AreaId": session.areaId,
+        },
+        signal: AbortSignal.timeout(5000),
+      })
+      if (res.status === 200) return { ok: true }
+      const reason =
+        res.status === 403 ? "配信エリア外・geoブロック" : `HTTP ${res.status}`
+      return { ok: false, reason }
+    } catch {
+      return { ok: false, reason: "接続不可" }
+    }
+  }
+
   buildRecordCommand(
     streamUrl: string,
     outputPath: string,

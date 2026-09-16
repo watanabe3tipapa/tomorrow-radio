@@ -54,6 +54,14 @@ export class RadikoSource implements SourceClient {
   buildPlayCommand(streamUrl: string, volume = 100) {
     return this.client.buildPlayCommand(streamUrl, volume)
   }
+
+  getAreaId(): Promise<string> {
+    return this.client.getAreaId()
+  }
+
+  probePlayable(stationId: string) {
+    return this.client.probePlayable(stationId)
+  }
 }
 
 const SERVICE_LABEL: Record<string, string> = {
@@ -123,6 +131,27 @@ export class RajiruSource implements SourceClient {
   buildPlayCommand(streamUrl: string, volume?: number) {
     return { bin: "ffplay", args: playArgs(streamUrl, volume) }
   }
+
+  async probePlayable(stationId: string) {
+    try {
+      const streamUrl = await this.getStreamUrl(stationId)
+      const res = await fetch(streamUrl, {
+        headers: { "User-Agent": "Mozilla/5.0" },
+        signal: AbortSignal.timeout(5000),
+      })
+      if (res.status === 200) {
+        const text = await res.text()
+        if (/^#EXTM3U/.test(text.trim())) return { ok: true }
+        return { ok: false, reason: "HLSプレイリストではない" }
+      }
+      return { ok: false, reason: `HTTP ${res.status}` }
+    } catch (e) {
+      return {
+        ok: false,
+        reason: "接続不可 (DNS/geo ブロックの可能性)",
+      }
+    }
+  }
 }
 
 export class SimulradioSource implements SourceClient {
@@ -165,5 +194,25 @@ export class SimulradioSource implements SourceClient {
 
   buildPlayCommand(streamUrl: string, volume?: number) {
     return { bin: "ffplay", args: playArgs(streamUrl, volume) }
+  }
+
+  async probePlayable(stationId: string) {
+    try {
+      const stations = await fetchSimulStations()
+      const st = stations.find((s) => s.id === stationId)
+      if (!st) return { ok: false, reason: "不明な局" }
+      const url = await resolveStreamUrl(st)
+      if (!url) return { ok: false, reason: "URL解決不可" }
+      if (/^mms:\/\//.test(url) || /nkansai\.tv/.test(url)) {
+        return { ok: false, reason: "MMS/WMSP (FFmpeg非対応)" }
+      }
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0" },
+        signal: AbortSignal.timeout(5000),
+      })
+      return res.ok ? { ok: true } : { ok: false, reason: `HTTP ${res.status}` }
+    } catch {
+      return { ok: false, reason: "接続不可" }
+    }
   }
 }

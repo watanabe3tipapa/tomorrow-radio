@@ -44,6 +44,8 @@ tomorrow-radio live TBS                           # radiko ライブ録音
 tomorrow-radio live rajiru_r1_tokyo               # らじる★らじる録音
 tomorrow-radio live simul_FM_WING                 # サイマルラジオ録音
 tomorrow-radio play TBS                           # ライブ再生 (ffplay。q で終了)
+tomorrow-radio playable                           # Live再生可能な局を一覧表示 (エリア判定)
+tomorrow-radio playable --source simulradio       # サイマルラジオの再生可否を確認
 tomorrow-radio tf TBS 20260730130000 20260730140000  # タイムフリー (radiko のみ)
 tomorrow-radio schedule                           # 予約一覧
 tomorrow-radio schedule add TBS 20260730 1300 3600 m4a  # 予約追加

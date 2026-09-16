@@ -16,6 +16,7 @@ tomorrow-radio <command> [options] [arguments]
 | `epg <station>` | Show program guide |
 | `live <station>` | Live recording |
 | `play <station>` | Live playback (ffplay) |
+| `playable` | List stations that are live-playable (area check) |
 | `tf <station> <ft> <to>` | TimeFree recording <Badge type="warning" text="radiko only" /> |
 | `schedule [sub]` | Schedule management |
 | `podcast <sub>` | Podcast operations |
@@ -111,6 +112,35 @@ During playback (ffplay standard keys): `q` quit, `9`/`0` volume, `m` mute, `spa
 | `--volume, -v` | `100` | Startup volume (0-100) |
 
 In the TUI, press `p` to toggle live playback of the current station.
+
+---
+
+## `playable`
+
+Probes each station against the real streaming CDN and lists which ones are
+**live-playable right now**. Useful to spot area restrictions: stations inside
+your radiko area are `LIVE可`, while out-of-area stations show
+`配信エリア外・geoブロック`.
+
+```bash
+tomorrow-radio playable                  # radiko (echo area + probe)
+tomorrow-radio playable --source rajiru
+tomorrow-radio playable --source simulradio
+```
+
+For radiko, the current area (`現エリア: JP1 (北海道)`) is shown first, then
+your area's stations plus major out-of-area flagships to make geo restrictions
+visible.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--source, -s` | `radiko` | `radiko` / `rajiru` / `simulradio` |
+
+Notes:
+- radiko probes the alliance-stream master with a valid auth token.
+- rajiru checks the HLS playlist reachability.
+- simulradio stations served over MMS/WMSP are reported as unsupported
+  (FFmpeg 8 has no MMS support).
 
 ---
 
