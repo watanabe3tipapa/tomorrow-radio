@@ -29,14 +29,33 @@ function writeCache(session: AuthSession): void {
   writeFileSync(AUTH_CACHE_PATH, JSON.stringify(session))
 }
 
-export async function authenticate(force = false): Promise<AuthSession> {
-  if (!force) {
-    const cached = readCache()
-    if (cached && Date.now() - cached.acquiredAt < CACHE_TTL_MS) {
-      return cached
-    }
-  }
+class AuthError extends Error {
+  retryable: boolean
 
+  constructor(message: string, retryable: boolean) {
+    super(message)
+    this.name = "AuthError"
+    this.retryable = retryable
+  }
+}
+
+function auth2Error(res: Response, body: string): AuthError {
+  if (res.status === 403) {
+    return new AuthError(
+      `auth2 failed: 403 (配信エリア外の可能性。このネットワークからは認証できません)`,
+      false,
+    )
+  }
+  // 200 なのにエリアIDが取れない = 回線側の一時的な異常応答 (空・HTML・中途半端な応答)。
+  // リトライで解消することが多い。
+  const preview = body.slice(0, 60) || "(空)"
+  return new AuthError(
+    `auth2 failed: ${res.status} (本文 "${preview}" のためエリア判定不可。一時的な異常なら自動リトライされます)`,
+    true,
+  )
+}
+
+async function authenticateOnce(): Promise<AuthSession> {
   // Step 1: auth1
   const auth1Res = await fetch("https://api.radiko.jp/v2/api/auth1", {
     method: "GET",
@@ -52,13 +71,16 @@ export async function authenticate(force = false): Promise<AuthSession> {
   const keyOffsetStr = auth1Res.headers.get("X-Radiko-KeyOffset")
   const keyLengthStr = auth1Res.headers.get("X-Radiko-KeyLength")
   if (!auth1Res.ok || !token || !keyOffsetStr || !keyLengthStr) {
-    throw new Error("auth1 failed: missing authentication headers")
+    throw new AuthError(
+      `auth1 failed: missing authentication headers (HTTP ${auth1Res.status})`,
+      true,
+    )
   }
 
   const keyOffset = Number.parseInt(keyOffsetStr, 10)
   const keyLength = Number.parseInt(keyLengthStr, 10)
   if (!Number.isSafeInteger(keyOffset) || !Number.isSafeInteger(keyLength) || keyLength <= 0) {
-    throw new Error("auth1 failed: invalid partial-key parameters")
+    throw new AuthError("auth1 failed: invalid partial-key parameters", false)
   }
 
   // Step 2: get the current authorization key supplied by Radiko's web player.
@@ -68,7 +90,7 @@ export async function authenticate(force = false): Promise<AuthSession> {
   const playerText = await playerRes.text()
   const keyMatch = playerText.match(/'pc_html5',\s*'(.+?)'/)
   if (!keyMatch) {
-    throw new Error("auth1 failed: could not extract authorization key")
+    throw new AuthError("auth1 failed: could not extract authorization key", true)
   }
   const fullKey = keyMatch[1]
   const partialKey = btoa(fullKey.slice(keyOffset, keyOffset + keyLength))
@@ -89,15 +111,50 @@ export async function authenticate(force = false): Promise<AuthSession> {
   const auth2Text = (await auth2Res.text()).trim()
   const areaId = auth2Text.split(",")[0]?.trim() ?? ""
   if (!auth2Res.ok || !isValidAreaId(areaId)) {
-    const reason = areaId === "OUT" ? "Radikoの配信対象地域外です" : `auth2 failed: ${auth2Res.status}`
-    throw new Error(reason)
+    if (areaId === "OUT") {
+      throw new AuthError(
+        "認証エラー: Radikoの配信対象地域外です (OUT エリア. 国外IP / VPN / データセンター経由の可能性)",
+        false,
+      )
+    }
+    if (!auth2Res.ok) throw auth2Error(auth2Res, auth2Text)
+    throw auth2Error(new Response(null, { status: 200 }), auth2Text)
   }
 
-  const session: AuthSession = {
+  return {
     token,
     areaId,
     acquiredAt: Date.now(),
   }
-  writeCache(session)
-  return session
+}
+
+export async function authenticate(force = false): Promise<AuthSession> {
+  if (!force) {
+    const cached = readCache()
+    if (cached && Date.now() - cached.acquiredAt < CACHE_TTL_MS) {
+      return cached
+    }
+  }
+
+  // 一時的な応答異常 (auth2 failed: 200 / ネットワーク断など) は
+  // 新しいトークンで立て直して最大3回リトライする。
+  const maxAttempts = 3
+  let lastError: unknown = new Error("authentication failed")
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const session = await authenticateOnce()
+      writeCache(session)
+      return session
+    } catch (e) {
+      lastError = e
+      const authError = e as AuthError
+      const retryable = authError instanceof AuthError ? authError.retryable : true
+      if (!retryable || attempt === maxAttempts) break
+      const waitMs = 600 * attempt
+      await new Promise((resolve) => setTimeout(resolve, waitMs))
+    }
+  }
+
+  throw lastError
 }
