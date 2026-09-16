@@ -36,13 +36,25 @@ tomorrow-radio
 
 | Key | Action |
 |-----|--------|
-| <kbd>Enter</kbd> | Start / Stop recording |
+| <kbd>Enter</kbd> | Start / Stop **live playback** (default action) |
+| <kbd>p</kbd> | Start / Stop live playback |
+| <kbd>r</kbd> / <kbd>Space</kbd> | Start / Stop recording (only when needed) |
 | <kbd>Tab</kbd> | Focus switch (info ↔ log) |
 | <kbd>s</kbd> | Station select dialog (全 126 局) |
 | <kbd>m</kbd> | Mode switch (Live / TimeFree) — radiko only |
 | <kbd>f</kbd> | Format switch (MP3 / m4a) |
 | <kbd>l</kbd> | Show schedule |
 | <kbd>q</kbd> / <kbd>Ctrl+C</kbd> | Quit |
+
+## Live playback (基本動作)
+
+放送局IDをそのまま渡すだけで認証→再生が走ります (録音は不要なときだけ `live` を使う):
+
+```bash
+tomorrow-radio TBS              # radiko
+tomorrow-radio rajiru_r1_tokyo  # らじる★らじる
+tomorrow-radio simul_FM_WING    # サイマルラジオ
+```
 
 ## 4. One-shot recording
 

@@ -25,8 +25,8 @@ v0.2.3 の変更点（README からの要約）:
 
 - Multi-Source: radiko、らじる★らじる、サイマルラジオ、任意のポッドキャストを扱えます。
 - Station ID Auto-Detect: 局 ID から配信元を自動判別します（例: `tomorrow-radio live rajiru_r1_tokyo`）。
-- Signal Meter TUI: 信号メーター、番組情報、ログ、ステータスを 4 ペインの受信機風 UI で表示。
-- PTT Record: `Enter` キーで録音を開始・停止できる操作系。
+- Live-first Listening: 基本はライブ再生。`tomorrow-radio TBS` で局 ID 指定だけで再生可能。
+- Signal Meter TUI: 信号メーター、番組情報、ログ、ステータスを 4 ペインの受信機風 UI で表示。TUI では `Enter` で再生、`r` で録音。
 - TimeFree: radiko のタイムフリー録音に対応。
 - cron Scheduling: 常駐プロセスを必要とせず、cron 形式へ予約録音をエクスポート可能。
 - Lightweight: 実行時の主要依存は Blessed と Commander。録音処理には FFmpeg を使用。

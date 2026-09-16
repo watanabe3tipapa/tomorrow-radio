@@ -4,13 +4,18 @@
 
 ```
 tomorrow-radio <command> [options] [arguments]
+tomorrow-radio <station-id>        # 局ID直接指定 → ライブ再生 (基本動作)
 ```
+
+Passing a station ID directly (no subcommand) starts **live playback**:
+`tomorrow-radio TBS` is the "just listen" path.
 
 ## Commands overview
 
 | Command | Description |
 |---------|-------------|
-| `tui` | Launch interactive TUI <Badge type="info" text="default" /> |
+| `<station-id>` | Live playback (ffplay) <Badge type="info" text="default action" /> |
+| `tui` | Launch interactive TUI (when no args) <Badge type="info" text="default with no args" /> |
 | `status` | Check radiko authentication status |
 | `scan` | List all available stations |
 | `epg <station>` | Show program guide |
@@ -98,10 +103,13 @@ tomorrow-radio live simul_FM_WING 7200
 
 Live playback via **ffplay** (bundled with FFmpeg). No file is created. Station ID is auto-detected by prefix.
 
+The **default action**: you can omit the `play` subcommand entirely.
+
 ```bash
-tomorrow-radio play TBS                  # radiko
-tomorrow-radio play rajiru_r1_tokyo      # らじる★らじる
-tomorrow-radio play simul_FM_WING        # サイマルラジオ
+tomorrow-radio TBS                  # = play TBS (基本動作)
+tomorrow-radio play TBS             # radiko
+tomorrow-radio play rajiru_r1_tokyo # らじる★らじる
+tomorrow-radio play simul_FM_WING   # サイマルラジオ
 tomorrow-radio play TBS --volume 70
 ```
 

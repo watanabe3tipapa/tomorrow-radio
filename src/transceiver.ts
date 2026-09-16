@@ -191,7 +191,7 @@ export class Transceiver {
   }
 
   async startPlayback(volume = 100): Promise<void> {
-    this.log("rec", `再生開始: ${this._station} (LIVE)`)
+    this.log("sys", `再生開始: ${this._station} (LIVE)`)
     try {
       await this._source.ensureAuth()
       const streamUrl = await this._source.getStreamUrl(this._station, "live")

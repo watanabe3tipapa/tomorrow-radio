@@ -9,7 +9,7 @@ const outputFormat = ref("m4a")
 const elapsed = ref("--:--:--")
 const chatLines = ref<{ text: string; color: string }[]>([])
 const logLines = ref<{ text: string; time: string }[]>([])
-const pttStatus = ref("[▶ PTT]  Enter: Record   Tab: Focus   s: Station   q: Quit")
+const pttStatus = ref("[▶ LIVE]  Enter: Play   r: Record   s: Station   q: Quit")
 const recording = ref(false)
 
 let cursorInterval: ReturnType<typeof setInterval> | undefined
@@ -65,13 +65,15 @@ async function runDemo() {
   // Phase 2: Connected
   addLog("認証完了  エリア: JP13")
   signalLevel.value = 100
-  pttStatus.value = "[▶ PTT]  Connected  Enter: Record"
+  pttStatus.value = "[▶ PLAYING]  Enter: Stop   r: Record   s: Station   q: Quit"
   addChat("[SYS] 選局: TBS (radiko)", "cyan")
   addChat("[NOW] 伊集院光の週末ラジオ  (13:00〜15:00)", "white")
   await delay(1000)
 
-  // Phase 3: Start recording (radiko)
-  pttStatus.value = "[▶ RECORDING]  Enter: Stop   s: Station   q: Quit"
+  // Phase 3: Live playback first, record only when needed
+  addChat("[PLAY] ライブ再生開始: TBS", "yellow")
+  await delay(800)
+  pttStatus.value = "[● RECORDING]  r: Stop   Enter: Play   s: Station   q: Quit"
   recording.value = true
   await delay(400)
   addChat("[REC] 録音開始 → TBS_20260730_130000.m4a", "red")
@@ -161,7 +163,7 @@ async function runDemo() {
   await delay(600)
 
   // Phase 8: Wrap
-  pttStatus.value = "[▶ PTT]  Enter: Record   Tab: Focus   s: Station   m: Mode   f: Format   q: Quit"
+  pttStatus.value = "[▶ LIVE]  Enter: Play   r: Record   s: Station   m: Mode   f: Format   q: Quit"
   addLog("全ソース対応: radiko / らじる★らじる / サイマルラジオ / ポッドキャスト")
   await delay(2500)
 

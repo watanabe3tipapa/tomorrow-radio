@@ -17,9 +17,9 @@ features:
   - title: Multi-Source
     details: radiko (16局) + らじる★らじる (26局) + サイマルラジオ (84局) + 任意ポッドキャスト。Station ID 自動判別。
   - title: Signal Meter
-    details: 録音状態・経過時間をリアルタイム表示。信号強度バーが接続状態を視覚化。
-  - title: PTT Record
-    details: Enter で録音開始/停止。無線機の PTT ボタンさながらの操作感。
+    details: 再生・録音状態・経過時間をリアルタイム表示。信号強度バーが接続状態を視覚化。
+  - title: Live-first Listening
+    details: 基本はライブ再生。Enter で再生開始/停止、録音は必要なときだけ r キー。
   - title: 4-Pane Dashboard
     details: 信号・番組情報・ログ・ステータスを一画面で。選局・モード切替もキー一発。
   - title: Lightweight
@@ -48,13 +48,17 @@ tomorrow-radio scan
 # 3. トランシーバー起動
 tomorrow-radio
 
-# 4. らじる★らじる録音 (ソース自動判別)
+# 4. ライブ再生 (基本動作: 局ID直接指定)
+tomorrow-radio TBS
+tomorrow-radio rajiru_r1_tokyo
+
+# 5. らじる★らじる録音 (ソース自動判別)
 tomorrow-radio live rajiru_r1_tokyo --duration 1800
 
-# 5. サイマルラジオ録音
+# 6. サイマルラジオ録音
 tomorrow-radio live simul_FM_WING --duration 3600
 
-# 6. ポッドキャスト
+# 7. ポッドキャスト
 tomorrow-radio podcast feed https://feeds.simplecast.com/54nAGcIl
 tomorrow-radio podcast download https://feeds.simplecast.com/54nAGcIl 0
 ```

@@ -173,13 +173,21 @@ export function startTui(
   }
 
   function syncFooter(): void {
-    if (isRecording) {
-      renderFooter("[ RECORDING ]  Enter:停止  p:再生  s:選局  q:終了", "red")
+    if (isRecording && isPlaying) {
+      renderFooter(
+        "[● REC │ ▶ PLAY]  r:録音停止  Enter:再生停止  s:選局  q:終了",
+        "red",
+      )
+    } else if (isRecording) {
+      renderFooter("[● RECORDING]  r:停止  Enter:再生  s:選局  q:終了", "red")
     } else if (isPlaying) {
-      renderFooter("[ ▶ PLAYING ]  p:停止  Enter:録音  s:選局  q:終了", "green")
+      renderFooter(
+        "[▶ PLAYING]  Enter:停止  r:録音  s:選局  q:終了",
+        "green",
+      )
     } else {
       renderFooter(
-        "[▶ PTT]  Enter:録音  Tab:切替  s:選局  m:モード  f:形式  l:予約  p:再生  q:終了",
+        "[▶ LIVE]  Enter:再生  r:録音  s:選局  Tab:切替  m:ﾓｰﾄﾞ  f:形式  l:予約  q:終了",
         "blue",
       )
     }
@@ -330,17 +338,21 @@ export function startTui(
     showScheduleDialog(screen, entries)
   })
 
-  screen.key(["enter"], async () => {
-    if (isRecording) {
-      transceiver.stopRecording()
-    } else {
-      await transceiver.startRecording()
-    }
+  screen.key(["enter"], () => {
+    transceiver.togglePlayback()
   })
 
   screen.key(["p"], () => {
     if (currentMode !== "live") transceiver.setMode("live")
     transceiver.togglePlayback()
+  })
+
+  screen.key(["r", "space"], () => {
+    if (isRecording) {
+      transceiver.stopRecording()
+    } else {
+      void transceiver.startRecording()
+    }
   })
 
   // ── Init ──

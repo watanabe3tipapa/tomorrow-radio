@@ -1,6 +1,6 @@
 # USAGE — Tomorrow Radio
 
-軽量 radiko / らじる★らじる / サイマルラジオ / ポッドキャスト 録音 CLI。Blessed TUI のトランシーバー風インターフェースで操作する。
+軽量 radiko / らじる★らじる / サイマルラジオ / ポッドキャスト 再生・録音 CLI。Blessed TUI のトランシーバー風インターフェースで操作する。
 
 ---
 
@@ -35,15 +35,15 @@ npm link    # グローバルインストール
 
 ```
 tomorrow-radio                                    # TUI 起動 (デフォルト)
+tomorrow-radio TBS                                # 局ID直接指定 → ライブ再生 (基本動作)
+tomorrow-radio TBS --volume 70                    # 音量指定で再生
 tomorrow-radio status                             # 認証確認
 tomorrow-radio scan                               # 全ソースの放送局一覧
 tomorrow-radio scan --source radiko               # radiko のみ
 tomorrow-radio epg TBS                            # radiko 番組表
 tomorrow-radio epg rajiru_r1_tokyo                # らじる★らじる番組表
-tomorrow-radio live TBS                           # radiko ライブ録音
-tomorrow-radio live rajiru_r1_tokyo               # らじる★らじる録音
-tomorrow-radio live simul_FM_WING                 # サイマルラジオ録音
 tomorrow-radio play TBS                           # ライブ再生 (ffplay。q で終了)
+tomorrow-radio live TBS                           # radiko ライブ録音 (必要時のみ)
 tomorrow-radio playable                           # Live再生可能な局を一覧表示 (エリア判定)
 tomorrow-radio playable --source simulradio       # サイマルラジオの再生可否を確認
 tomorrow-radio tf TBS 20260730130000 20260730140000  # タイムフリー (radiko のみ)
@@ -74,36 +74,36 @@ tomorrow-radio simulradio live simul_FM_WING 1800
 | `--duration, -d` | live, simulradio live | 録音時間(秒) | 3600 |
 | `--format, -f` | live, tf, tui | 出力形式 | m4a |
 | `--station, -s` | tui | 初期選局 | TBS |
-| `--volume, -v` | play | 再生音量 (0-100) | 100 |
+| `--volume, -v` | play, 局ID直接指定 | 再生音量 (0-100) | 100 |
 
-### ライブ再生 (play)
+### ライブ再生 (基本動作)
 
-`play` は **ffplay**（FFmpeg 同梱）を子プロセスとして起動し、選局した局を聴くモードです。録音ファイルは生成しません。
+**基本動作はライブ再生**です。放送局IDをそのまま渡すと、認証→ストリーム解決→ffplay 起動まで自動で行います。録音は必要なときだけ別コマンド (`live`) を使います。
 
 ```bash
-tomorrow-radio play TBS                    # radiko
-tomorrow-radio play rajiru_r1_tokyo        # らじる★らじる
-tomorrow-radio play simul_FM_WING          # サイマルラジオ
-tomorrow-radio play TBS --volume 70        # 音量を 70% で開始
+tomorrow-radio TBS                    # radiko (基本動作)
+tomorrow-radio TBS --volume 70        # 音量を 70% で開始
+tomorrow-radio rajiru_r1_tokyo        # らじる★らじる
+tomorrow-radio simul_FM_WING          # サイマルラジオ
 ```
 
 - 再生中の操作（ffplay 標準）: `q` 終了、`9`/`0` 音量、`m` ミュート、`space` 一時停止
 - radiko は認証ヘッダを自動付与（録音と同じ認証セッションを使用）
-- TUI では `p` キーで現在の局のライブ再生をトグル
+- `play` コマンドは `tomorrow-radio play TBS` のように明示する形式でも利用可能
+- 録音が必要なときは `tomorrow-radio live TBS --duration 600` を使用
 
 ---
 
 ## TUI 操作
 
 ```
-┌─ SIG ▄▄▄▄▇▇▇█  00:42/60:00  ● REC ─┬─ TBS ─┬─ LIVE ─┬─ m4a ─┐
+┌─ SIG ▄▄▄▄▇▇▇█  00:00:00  ● ───┬─ TBS ─┬─ LIVE ─┬─ m4a ─┐
 │ [NOW] 伊集院光の週末ラジオ                      │
-│ [REC] 録音開始 → TBS_20260730_130000.m4a        │
 ├──────── Activity Log ────────────────────────────┤
 │ [SYS] 認証完了 エリア:JP13  12:59:30            │
-│ [REC] 録音開始: TBS (LIVE)  13:00:00            │
+│ [SYS] 再生開始: TBS (LIVE)  12:59:31            │
 ├──────────────────────────────────────────────────┤
-│ [▶ PTT]  Enter:録音  Tab:切替  s:選局  q:終了  │
+│ [▶ LIVE]  Enter:再生  r:録音  s:選局  Tab:切替  │
 └──────────────────────────────────────────────────┘
 ```
 
@@ -111,16 +111,17 @@ tomorrow-radio play TBS --volume 70        # 音量を 70% で開始
 
 | キー | 動作 |
 |---|---|
-| **Enter** | 録音開始 / 停止 (PTT) |
+| **Enter** | ライブ再生開始 / 停止 (基本動作) |
+| **p** | ライブ再生開始 / 停止 |
+| **r** / **Space** | 録音開始 / 停止 (必要時のみ) |
 | **Tab** | フォーカス切替 (番組情報 ↔ ログ) |
 | **s** | 選局ダイアログ |
 | **m** | モード切替 (Live / TimeFree) |
 | **f** | 形式切替 (MP3 / m4a) |
 | **l** | 予約一覧表示 |
-| **p** | ライブ再生開始 / 停止 |
 | **q** / **Ctrl+C** | 終了 |
 
-> 録音 (Enter) と再生 (p) は独立して操作できます。再生中に選局 (s) やモード切替 (m) を行うと再生は停止します。
+> 再生 (Enter/p) と録音 (r) は独立して操作できます。再生中に選局 (s) やモード切替 (m) を行うと再生は停止します。
 
 ### ステータス表示
 
