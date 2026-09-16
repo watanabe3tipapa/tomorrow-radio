@@ -10,7 +10,7 @@ tomorrow-radio status
 
 ## 2. Scan all available stations
 
-全 <kbd>126</kbd> 局をスキャンします:
+全 <kbd>124</kbd> 局をスキャンします:
 
 ```bash
 tomorrow-radio scan
@@ -21,7 +21,7 @@ tomorrow-radio scan
 | Command | Stations |
 |---------|----------|
 | `tomorrow-radio scan --source radiko` | 16 局 |
-| `tomorrow-radio scan --source rajiru` | 26 局 |
+| `tomorrow-radio scan --source rajiru` | 24 局 |
 | `tomorrow-radio scan --source simulradio` | 84 局 |
 
 ## 3. Launch TUI
@@ -40,7 +40,7 @@ tomorrow-radio
 | <kbd>p</kbd> | Start / Stop live playback |
 | <kbd>r</kbd> / <kbd>Space</kbd> | Start / Stop recording (only when needed) |
 | <kbd>Tab</kbd> | Focus switch (info ↔ log) |
-| <kbd>s</kbd> | Station select dialog (全 126 局) |
+| <kbd>s</kbd> | Station select dialog (全 124 局) |
 | <kbd>m</kbd> | Mode switch (Live / TimeFree) — radiko only |
 | <kbd>f</kbd> | Format switch (MP3 / m4a) |
 | <kbd>l</kbd> | Show schedule |

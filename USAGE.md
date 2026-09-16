@@ -97,10 +97,10 @@ tomorrow-radio simul_FM_WING          # サイマルラジオ
 ## TUI 操作
 
 ```
-┌─ SIG ▄▄▄▄▇▇▇█  00:00:00  ● ───┬─ TBS ─┬─ LIVE ─┬─ m4a ─┐
+┌─ SIG ▄▄▄▄▇▇▇█  00:00:00  ● ───┬─ TBS ─┬─ RADIKO ─┬─ LIVE ─┬─ m4a ─┐
 │ [NOW] 伊集院光の週末ラジオ                      │
 ├──────── Activity Log ────────────────────────────┤
-│ [SYS] 認証完了 エリア:JP13  12:59:30            │
+│ [SYS] 認証完了 エリア:JP1  12:59:30            │
 │ [SYS] 再生開始: TBS (LIVE)  12:59:31            │
 ├──────────────────────────────────────────────────┤
 │ [▶ LIVE]  Enter:再生  r:録音  s:選局  Tab:切替  │
@@ -116,7 +116,7 @@ tomorrow-radio simul_FM_WING          # サイマルラジオ
 | **r** / **Space** | 録音開始 / 停止 (必要時のみ) |
 | **Tab** | フォーカス切替 (番組情報 ↔ ログ) |
 | **s** | 選局ダイアログ |
-| **m** | モード切替 (Live / TimeFree) |
+| **m** | モード切替 (Live / TimeFree) (radiko のみ) |
 | **f** | 形式切替 (MP3 / m4a) |
 | **l** | 予約一覧表示 |
 | **q** / **Ctrl+C** | 終了 |
@@ -128,9 +128,10 @@ tomorrow-radio simul_FM_WING          # サイマルラジオ
 | ヘッダー要素 | 説明 |
 |---|---|
 | SIG ▄▄▄▄▇▇▇█ | 信号強度バー (認証状態・接続品質) |
-| 00:42/60:00 | 録音経過時間 / 最大時間 |
+| 00:42:31 | 録音経過時間 (HH:MM:SS。非録音時は --:--:--) |
 | ● REC | 録音中 (赤) / 接続済み (緑) / OFF (赤) |
 | TBS | 現在の放送局 |
+| RADIKO / らじる / SIMUL | ソース種別 |
 | LIVE / TIMEFREE | 動作モード |
 | m4a / mp3 | 出力形式 |
 | ▶ PLAY | ライブ再生中 (黄) |
@@ -189,7 +190,7 @@ crontab -e
 | ソース | 局数 | 認証 | プロトコル | 番組表 | タイムフリー |
 |---|---|---|---|---|---|
 | radiko | 16 (東京) | auth1+auth2 + IP制限 | HLS (AAC) | ✅ | ✅ |
-| らじる★らじる | 26 (9地域×3サービス) | 不要 (Geolockのみ) | HLS (AAC) | ✅ | ❌ |
+| らじる★らじる | 24 (NHK 各サービス) | 不要 (Geolockのみ) | HLS (AAC) | ✅ | ❌ |
 | サイマルラジオ | 84 (全国コミュニティFM) | 不要 | ASX→HTTP/MMS | ❌ | ❌ |
 | ポッドキャスト | 任意 | 不要 | RSS→音声ファイル | N/A | N/A |
 
@@ -198,15 +199,15 @@ Station ID の prefix で自動判別: `rajiru_` → らじる★らじる、`si
 ### radiko 認証の仕組み
 
 ```
-① GET /v2/station/area         → エリアID (例: JP13)
-② GET /v2/api/auth1            → x-radiko-authtoken, x-radiko-keyoffset
-③ GET /apps/js/playerCommon.js → 認証キー抽出 → partial key 生成
-④ GET /v2/api/auth2            → 認証確立
-⑤ m3u8 URL を解決 → FFmpeg で録音
+① GET /v2/api/auth1            → X-Radiko-AuthToken / KeyOffset / KeyLength
+② GET /apps/js/playerCommon.js → 認証キー抽出 → partial key 生成
+③ GET /v2/api/auth2            → 認証確立 + エリアID 取得 (例: JP1)
+④ m3u8 URL を解決 → FFmpeg で再生 / 録音
 ```
 
 - 認証トークンは `~/tomorrow-radio/auth.json` にキャッシュ (1時間)
 - キャッシュが切れたら自動再認証
+- 一時的な異常応答 (`auth2 failed: 200` など) は新しいトークンで最大3回自動リトライ
 - らじる★らじる・サイマルラジオは認証不要
 
 ---
@@ -221,7 +222,8 @@ src/
 ├── sources/
 │   ├── types.ts          # 統一 SourceClient インターフェース (Station, Program, RecordCommand)
 │   ├── registry.ts       # ソース種別検出 + インスタンス管理
-│   └── adapters.ts       # RadikoSource / RajiruSource / SimulradioSource
+│   ├── adapters.ts       # RadikoSource / RajiruSource / SimulradioSource
+│   └── playable.ts       # エリア名・代表局・再生可否プローブのヘルパー
 ├── radiko/
 │   ├── types.ts          # 型定義
 │   ├── auth.ts           # 認証

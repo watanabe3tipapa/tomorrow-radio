@@ -1,4 +1,6 @@
 import { Command } from "commander"
+import { mkdirSync } from "node:fs"
+import { join } from "node:path"
 import { RadikoClient } from "./radiko/client.js"
 import { PodcastClient } from "./podcast/client.js"
 import { Scheduler } from "./scheduler/scheduler.js"
@@ -48,7 +50,9 @@ function outputPath(stationId: string, ext: string): string {
   const dateStr =
     `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}_` +
     `${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}${String(now.getSeconds()).padStart(2, "0")}`
-  return `${stationId}_${dateStr}.${ext}`
+  const dir = loadConfig().outputDir
+  mkdirSync(dir, { recursive: true })
+  return join(dir, `${stationId}_${dateStr}.${ext}`)
 }
 
 export function run(argv: string[]): void {
@@ -262,7 +266,9 @@ export function run(argv: string[]): void {
         process.exit(1)
       }
 
-      const op = `${station.toUpperCase()}_${ft}.${format}`
+      const dir = loadConfig().outputDir
+      mkdirSync(dir, { recursive: true })
+      const op = join(dir, `${station.toUpperCase()}_${ft}.${format}`)
       console.log(
         `タイムフリー録音: ${station.toUpperCase()} ${ft.slice(0, 8)} ${ft.slice(8, 10)}:${ft.slice(10, 12)} ～ ${to.slice(8, 10)}:${to.slice(10, 12)}`
       )

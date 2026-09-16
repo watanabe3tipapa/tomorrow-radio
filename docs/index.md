@@ -15,7 +15,7 @@ hero:
 
 features:
   - title: Multi-Source
-    details: radiko (16局) + らじる★らじる (26局) + サイマルラジオ (84局) + 任意ポッドキャスト。Station ID 自動判別。
+    details: radiko (16局) + らじる★らじる (24局) + サイマルラジオ (84局) + 任意ポッドキャスト。Station ID 自動判別。
   - title: Signal Meter
     details: 再生・録音状態・経過時間をリアルタイム表示。信号強度バーが接続状態を視覚化。
   - title: Live-first Listening
@@ -42,7 +42,7 @@ import TuiDemo from "./components/TuiDemo.vue"
 # 1. 認証確認 (radiko)
 tomorrow-radio status
 
-# 2. 全ソーススキャン (126局)
+# 2. 全ソーススキャン (124局)
 tomorrow-radio scan
 
 # 3. トランシーバー起動

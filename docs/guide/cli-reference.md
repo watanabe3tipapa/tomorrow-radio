@@ -58,7 +58,7 @@ tomorrow-radio status
 
 ## `scan`
 
-Show all available stations from all sources (126 stations total).
+Show all available stations from all sources (124 stations total).
 
 ```bash
 tomorrow-radio scan
@@ -224,7 +224,7 @@ tomorrow-radio rajiru epg <station-id>
 tomorrow-radio rajiru live <id> [duration_sec]
 ```
 
-- Fetches NHK らじる★らじる config XML (9 areas × 3 services = 26 stations)
+- Fetches NHK らじる★らじる config XML (24 stations)
 - No authentication required
 - EPG from NHK API (r8/v8)
 

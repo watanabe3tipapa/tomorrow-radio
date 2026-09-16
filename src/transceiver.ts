@@ -2,7 +2,10 @@ import { getSource, detectSource } from "./sources/registry.js"
 import type { SourceClient } from "./sources/types.js"
 import { Recorder } from "./recorder/recorder.js"
 import { Player } from "./player/player.js"
+import { loadConfig } from "./utils/config.js"
 import type { OutputFormat } from "./radiko/types.js"
+import { mkdirSync } from "node:fs"
+import { join } from "node:path"
 
 export type LogLevel = "sys" | "rec" | "done" | "err"
 
@@ -163,7 +166,11 @@ export class Transceiver {
     const dateStr =
       `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}_` +
       `${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}${String(now.getSeconds()).padStart(2, "0")}`
-    const outputPath = `${this._station}_${dateStr}.${this._format}`
+    const outputPath = join(
+      loadConfig().outputDir,
+      `${this._station}_${dateStr}.${this._format}`,
+    )
+    mkdirSync(loadConfig().outputDir, { recursive: true })
 
     this.log("rec", `録音開始: ${this._station} (${this._mode.toUpperCase()}) → ${outputPath}`)
 
