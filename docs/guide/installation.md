@@ -36,6 +36,19 @@ npm run build
 npm link
 ```
 
+### `npm link`（グローバルインストール）とは
+
+`npm link` は npm のグローバル bin（macOS では `~/.npm-global/bin` など）に
+`tomorrow-radio` を登録し、**どのディレクトリからでも**実行できるようにします。
+npm レジストリへ publish するのではなく、**このリポジトリのビルド成果物
+`dist/index.js` を直接参照**します。
+
+- ソースを変更したら `npm run build` で再ビルド → 即反映（publish 不要）
+- リポジトリ更新後は `git pull && npm run build`
+- 複数クローンがある場合、リンクは**最後に `npm link` したディレクトリ**を指します。
+  古い clone のまま古いコードが動くことがあるため `readlink $(which tomorrow-radio)` で確認
+- 解除は `npm unlink -g tomorrow-radio`
+
 ## Verify
 
 インストール後、次のコマンドで動作確認します:

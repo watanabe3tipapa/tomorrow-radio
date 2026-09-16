@@ -23,7 +23,7 @@ features:
   - title: 4-Pane Dashboard
     details: 信号・番組情報・ログ・ステータスを一画面で。選局・モード切替もキー一発。
   - title: Lightweight
-    details: rfriends のような Web サーバ不要。FFmpeg だけあれば即動作。3つの npm 依存。
+    details: rfriends のような Web サーバ不要。FFmpeg だけあれば即動作。2つの npm 依存。
   - title: cron Scheduling
     details: 常駐デーモン不要。cron エクスポートで OS のスケジューラと連携。
 ---

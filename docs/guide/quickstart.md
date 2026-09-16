@@ -24,6 +24,8 @@ tomorrow-radio scan
 | `tomorrow-radio scan --source rajiru` | 24 局 |
 | `tomorrow-radio scan --source simulradio` | 84 局 |
 
+> radiko の局数は **認証エリアに依存**します（東京は 16、北海道は 8）。上記の合計 124 局は東京エリア基準です。
+
 ## 3. Launch TUI
 
 トランシーバー風 <kbd>4</kbd> ペイン TUI を起動:
